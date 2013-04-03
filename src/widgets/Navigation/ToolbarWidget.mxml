@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:viewer="com.esri.viewer.*">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.esri.viewer.AppEvent;
+			
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			protected function buttonbar1_changeHandler(event:IndexChangeEvent):void
+			{
+				doNavAction(event.currentTarget.dataProvider[event.newIndex].action,
+					event.currentTarget.dataProvider[event.newIndex].label);
+			}
+			
+			protected function buttonbar1_valueCommitHandler(event:FlexEvent):void
+			{
+				if (event.currentTarget.selectedIndex != -1)
+				{
+					doNavAction(event.currentTarget.dataProvider[event.currentTarget.selectedIndex].action,
+						event.currentTarget.dataProvider[event.currentTarget.selectedIndex].label);
+				}
+			}
+			
+			private function doNavAction(action:String, label:String):void
+			{
+				var data:Object =
+					{
+						tool: action,
+						status: label
+					}
+				AppEvent.dispatch(AppEvent.SET_MAP_NAVIGATION, data);
+			}
+		]]>
+	</fx:Script>
+	<s:HGroup paddingTop="3">
+		<s:ButtonBar id="btnBar"
+					 change="buttonbar1_changeHandler(event)"
+					 requireSelection="true"
+					 selectedIndex="0"
+					 skinClass="widgets.Navigation.VerticalButtonBarSkin"
+					 valueCommit="buttonbar1_valueCommitHandler(event)"
+					 >
+			<s:layout>
+				<s:HorizontalLayout gap="0"/>
+			</s:layout>
+			<s:dataProvider>
+				<s:ArrayCollection>
+					<fx:Object action="pan"
+							   imageIcon="assets/images/i_pan.png"
+							   label="平移"/>
+					<fx:Object action="zoomin"
+							   imageIcon="assets/images/i_zoomin.png"
+							   label="放大"
+							   visible="false"/>
+					<fx:Object action="zoomout"
+							   imageIcon="assets/images/i_zoomout.png"
+							   label="缩小"/>
+					<fx:Object action="length"
+							   imageIcon="assets/images/1013.png"
+							   label="距离测量"/>
+					<fx:Object action="area"
+							   imageIcon="assets/images/1019.png"
+							   label="面积测量"/>
+					<fx:Object action="identify"
+							   imageIcon="assets/images/i_about.png"
+							   label="信息查看"/>
+					<fx:Object action="clear"
+							   imageIcon="assets/images/i_clear.png"
+							   label="地图清理"/>
+
+				</s:ArrayCollection>
+			</s:dataProvider>
+		</s:ButtonBar>
+	</s:HGroup>
+</viewer:BaseWidget>

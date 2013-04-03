@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600" applicationComplete="app(event)" 
+			    >
+	<s:layout>
+		<s:BasicLayout/>
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import mx.utils.URLUtil;
+			import mx.events.FlexEvent;
+			
+			import spark.components.Button;
+			protected function app(event:FlexEvent):void
+			{
+				var url:String =  ExternalInterface.call("window.location.href.toString");
+				
+				var array:Array = url.split("?");
+												 if(array.length>1)
+												 {
+													 var param:Object=URLUtil.stringToObject(array[1],"&");  
+													 if(param!=null && param.url!=null)
+													 {
+														 img.source = param.url;
+													 }
+												 }
+												 
+				img.addEventListener(MouseEvent.MOUSE_DOWN, imgMouseDown);
+				img.addEventListener(MouseEvent.MOUSE_UP, imgMouseUp);
+				this.addEventListener(MouseEvent.MOUSE_WHEEL, imgZoom);//滚动事件
+			}
+			private function imgMouseDown(evt:MouseEvent):void
+			{
+				evt.currentTarget.startDrag();
+			}
+			private function imgMouseUp(evt:MouseEvent):void
+			{
+				evt.currentTarget.stopDrag();
+			}
+			private function imgZoom(evt:MouseEvent):void
+			{
+				var w:Number = img.width * evt.delta * 0.02;
+				var h:Number = img.height * evt.delta * 0.02;
+				img.x += -w/2;
+				img.y += -h/2;
+				
+				img.width += w;
+				img.height += h;
+				//Alert.show(img.width.toString());
+			}
+
+			[Bindable]            
+			public var angle:int=0;
+//			
+			private function rotateImage():void{
+				rotate.end();                
+				angle += 90;                
+				rotate.play();
+			
+			}
+//			
+//			private var zoom:Zoom;  
+//			       private function init():void{  
+//					   
+//						     var bm:IBrowserManager = BrowserManager.getInstance(); 
+//						     bm.init("","图片浏览");
+//							 var url:String =  ExternalInterface.call("window.location.href.toString");
+//
+//								 var array:Array = url.split("?");
+//								 if(array.length>1)
+//								 {
+//									 var param:Object=URLUtil.stringToObject(array[1],"&");  
+//									 if(param!=null && param.url!=null)
+//									 {
+//										 image.source = param.url;
+//									 }
+//								 }
+//				             zoom = new Zoom;  
+//							 zoom.originX = image.width / 2;  
+//							 zoom.originY = image.height / 2;  
+//							 zoom.zoomWidthFrom = hslider.value;  
+//							 zoom.zoomHeightFrom = hslider.value;  
+//							 zoom.zoomWidthTo = hslider.value;  
+//							 zoom.zoomHeightTo = hslider.value;  
+//							 zoom.duration = 1000;  
+//							 zoom.target = image;  
+//				       }  
+//			       private function Big():void{  
+//				           if(hslider.value < 10){  
+//					             hslider.value  += 1;  
+//					           }  
+//				            zoomModify();          
+//				       }  
+//			      private function Small():void{  
+//				             
+//				          if(hslider.value > 0){  
+//					            hslider.value -= 1;  
+//					           }  
+//				            zoomModify();  
+//				       }            
+//			      private function zoomModify():void {  
+//				            zoom.stop();  
+////				            zoom.originX = image.width / 2;  
+////				            zoom.originY = image.height / 2;  
+//				            zoom.originX = image.width / 2;  
+//				            zoom.originY = image.height / 2;  
+//				            zoom.zoomWidthFrom = hslider.value;  
+//				            zoom.zoomHeightFrom = hslider.value;  
+//				            zoom.zoomWidthTo = hslider.value;  
+//				            zoom.zoomHeightTo = hslider.value;  
+//				            zoom.duration = 1000;  
+//				            zoom.target = image;  
+//				            zoom.play();  
+//				           }  
+//
+//				        
+//			private var oldX:Number; 
+//			private var oldY:Number;
+//			private var currentX:Number;
+//			private var currentY:Number;
+//			
+//			private function dragStart(event:MouseEvent):void
+//			{
+//				oldX=event.stageX; 
+//				oldY=event.stageY;
+//			}
+//			
+//	
+//			private function dragEnd(event:MouseEvent):void
+//			{
+//				if (event.buttonDown)
+//				{ 
+//					var x:Number=event.stageX - oldX; 
+//					var y:Number=event.stageY - oldY;
+//					oldX=event.stageX; 
+//					oldY=event.stageY;
+//					image.move(image.x + x, image.y + y);
+//					currentX = image.x;
+//					currentY = image.y;
+//				}
+//			}
+
+
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<s:Rotate id="rotate" angleFrom="{angle-90}" autoCenterTransform="true"  angleTo="{angle}" target="{img}"/>
+	</fx:Declarations>
+
+			<!--<s:VGroup id = "Catalog" width="100%" height="100%">
+		<mx:Image id = "image" source = "assets/images/1013.png" 
+				 buttonMode="true"  width="600" height="500"
+				 mouseMove="dragEnd(event)"  mouseDown="dragStart(event)"  />
+	</s:VGroup>-->
+
+	<mx:Image id="img" source="03.jpg" width="100%" height="100%"/>
+	<s:HGroup paddingLeft="10" paddingTop="5" verticalAlign="middle">
+		<mx:Button click="rotateImage()" label = "旋转" skin="com.esri.viewer.skins.halo.ButtonSkin" />
+		<!--<s:HSlider id="hslider" width="100"
+		height="10"
+		buttonMode = "true" useHandCursor = "true"
+		minimum = "1" maximum = "5"
+		snapInterval = "0.2" value = "1" change = "zoomModify()"/>-->
+	</s:HGroup>
+</s:Application>

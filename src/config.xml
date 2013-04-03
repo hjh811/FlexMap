@@ -1,0 +1,111 @@
+<?xml version="1.0" ?>
+<configuration>
+    <title>GIS地图</title>
+    <subtitle>综合查询与展示子系统</subtitle>
+    <logo>assets/images/i_layers.png</logo>
+    <style>
+        <colors>0x000000,0xDEEBFF,0xFFEDB8,0xFFEDB8,0x000000</colors>
+        <alpha>0.9</alpha>
+    </style>
+    <!-- replace the following url with your own geometryservice -->
+     <!--<servletcontext>http://10.23.108.104/zjb</servletcontext>-->
+    <servletcontext>http://10.23.108.104/zjb</servletcontext>  
+    <geometryservice url="http://10.23.108.104:8399/ArcGIS/rest/services/Geometry/GeometryServer" />
+	
+    <!-- UI elements -->
+    <widget left="10"  top="50"    config="widgets/Navigation/NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf"/>
+    <widget left="0"  top="50"     url="widgets/Navigation/ToolbarWidget.swf"/>
+    <widget right="5" bottom="5" config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf"/>
+    <widget right="20" top="55"   config="widgets/MapSwitchModel/MapSwitcherWidget.xml" url="widgets/MapSwitchModel/MapSwitcherWidget.swf"/>
+    <!-- <widget right="20" top="55"    config="widgets/MapSwitcher/MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf"/> -->
+    <widget left="0"   top="0"     config="widgets/HeaderController/HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/>
+
+    <map wraparound180="false" initialextent="410951 2548907 444712 2564412" fullextent="410951 2548907 444712 2564412" top="40" esrilogovisible="false">
+        <basemaps>
+             <!-- <layer label="基础地图" type="custom" visible="true"  alpha="1"  icon="assets/images/base/base.jpg"
+                   url="http://localhost/arcgiscache/ZJDATA/Layers/_alllayers"/>-->
+           <layer label="基础地图" type="custom" visible="true"  alpha="1"  icon="assets/images/base/base.jpg"
+                   url="http://10.23.108.104:8399/arcgiscache/DFDXT/Layers/_alllayers"/>
+            <layer label="规划处基础地形(09年)" type="custom" visible="false"  alpha="1"  icon="assets/images/base/streets09.jpg"
+                   url="http://10.23.108.65:8088/gzwater/GHCDX/Layers/_alllayers"/>
+            <layer label="全市水系图" type="custom" visible="false"  alpha="1"  icon="assets/images/base/shuixi.jpg"
+                   url="http://10.23.108.65:8088/gzwater/AllWater/Layers/_alllayers"/>
+            <layer label="规划处影像图(09年)" type="custom" visible="false"  alpha="1"  icon="assets/images/base/imagery09.jpg"
+                   url="http://10.23.108.65:8088/gzwater/slsjzx110303allyxt/Layers/_alllayers"/>
+            <layer label="规划处影像图(02年)" type="custom" visible="false"  alpha="1"  icon="assets/images/base/imagery02.jpg"
+                   url="http://10.23.108.65:8088/gzwater/GhcWater/Layers/_alllayers"/>
+
+        </basemaps>
+        <operationallayers>
+            <layer label="堤防专题图" type="dynamic" visible="true" alpha="1" 
+                   url="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer"/>
+            <!--<layer label="桥梁" type="feature" visible="false" alpha="1.0"
+                   url="http://local/ArcGIS/rest/services/qiaoliang/FeatureServer/0"/>
+            <layer label="专题图" type="wms" visible="true" alpha="1" 
+                   url="http://10.23.108.65:8123/geoserver/geoserverTest/wms?CRS=CRS%3A2383" visiblelayers="PS_PM_ZY" version="1.1.0" wkid="2383" skipgetcapabilities="false"/>-->
+            <!--  <layer label="Demographics" type="tiled" visible="false" alpha="0.5"
+                   url="http://server.arcgisonline.com/ArcGIS/rest/services/Demographics/USA_Median_Household_Income/MapServer">
+                <sublayer id="1" popupconfig="popups/PopUp_Demographics_BlockGroups.xml"/>
+                <sublayer id="2" popupconfig="popups/PopUp_Demographics_Tracts.xml"/>
+                <sublayer id="3" popupconfig="popups/PopUp_Demographics_Counties.xml"/>
+                <sublayer id="4" popupconfig="popups/PopUp_Demographics_States.xml"/>
+            </layer>
+            <layer label="Boundaries and Places" type="tiled" visible="false"
+                   url="http://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places_Alternate/MapServer"/>
+            <layer label="Fires" type="feature" visible="false" alpha="1.0"
+                   popupconfig="popups/PopUp_Fires.xml"
+                   url="http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/Fire/Sheep/FeatureServer/0"/>-->
+        </operationallayers>
+    </map>
+
+    <!-- widgets organized into widget containers that manage close/open etc -->
+    <!-- supported layout property options: horizontal(default)|float|vertical|fix-->
+    <widgetcontainer layout="float">
+        <widget label="查询定位"   left="100" top="90" 
+                icon="assets/images/i_search.png"
+                config="widgets/widgetsConfig/QueryInfoWidget.xml"
+                url="widgets/QueryInfo/QueryInfoWidget.swf"/>
+        <widget label="空间查询"   left="100" top="90" 
+                icon="assets/images/i_overview.png"
+                config="widgets/widgetsConfig/SpatialQueryWidget.xml"
+                url="widgets/QueryInfo/SpatialQueryWidget.swf"/>
+        <widget label="巡查监控"         left="430" top="90"
+                icon="assets/images/i_demographics.png"
+                config="widgets/widgetsConfig/PDAWidget.xml" 
+                url="widgets/PDA/PDAWidget.swf"/>
+        <widget label="巡查上报提醒"         left="90" top="90" preload="open"
+                icon="assets/images/i_table.png"
+                url="widgets/PDA/PDARemindWidget.swf"/>
+       <widget label="信息统计"   right="50" top="90" 
+                icon="assets/images/statistics.png"
+                config="widgets/widgetsConfig/StatisticWidget.xml"
+                url="widgets/statistic/StatisticWidget.swf"/>
+        <widget label="书签"         left="430" top="90"
+                icon="assets/images/i_bookmark.png"
+                config="widgets/Bookmark/BookmarkWidget.xml"
+                url="widgets/Bookmark/BookmarkWidget.swf"/>
+        <!-- <widget label="空间查询" left="80" top="280"
+                icon="assets/images/i_search.png"
+                config="widgets/Search/SearchWidget_Louisville.xml"
+                url="widgets/Search/SearchWidget.swf"/> -->
+        <widget label="地图标绘" left="60" top="300"
+                icon="assets/images/i_draw2.png"
+                config="widgets/eDraw/eDrawWidget.xml"
+                url="widgets/eDraw/eDrawWidget.swf"/>
+        <!--<widget label="编辑"
+                icon="assets/images/i_edit.png"
+                config="widgets/Edit/EditWidget.xml"
+                url="widgets/Edit/EditWidget.swf"/>-->
+        <widget label="打印" left="390" top="300"
+                icon="assets/images/i_print.png"
+                config="widgets/Print/SnapshotWidget.xml"
+                url="widgets/Print/SnapshotWidget.swf"/>
+        <!--
+        <widget label="My first widget"
+                icon="assets/images/i_widget.png"
+                config="widgets/Samples/HelloWorld/HelloWorldWidget.xml"
+                url="widgets/Samples/HelloWorld/HelloWorldWidget.swf"/>
+        -->
+    </widgetcontainer>
+
+</configuration>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" title="巡查员信息" close="PopUpManager.removePopUp(this);" xmlns:supportClasses="com.esri.ags.skins.supportClasses.*" width="450" height="252">
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+
+			[Bindable]
+			public var userInfo:Object = null;
+			public var servletcontext:String = null;
+			private function save():void
+			{
+				var httpservices:HTTPService = new HTTPService;
+				httpservices.url= servletcontext + "/phone/PDAServlet?o=updateuser";
+				httpservices.method = "POST";
+				httpservices.addEventListener(ResultEvent.RESULT,resultHandler);
+				httpservices.addEventListener(FaultEvent.FAULT, faultHandler);
+				httpservices.send(userInfo);
+			}
+			
+			private function resultHandler(event:ResultEvent):void
+			{
+				PopUpManager.removePopUp(this);
+				this.dispatchEvent(new Event("NEWCLOSE"));
+			}
+			
+			private function faultHandler():void
+			{
+				Alert.show("保存失败");
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<mx:FormItem  label="登录名" x="32" y="18">
+		<mx:HBox verticalAlign="middle">
+			<s:TextInput  id="DLM" width="140" editable="true" text="@{userInfo.loginname}"/>
+			<s:Label text="巡查员&#xd;"/>
+			<s:TextInput  id="XCY" width="140" editable="true" text="@{userInfo.realname}"/>
+		</mx:HBox>
+	</mx:FormItem>
+	<mx:FormItem  label="手机号" x="32" y="49">
+		<mx:HBox verticalAlign="middle">
+			<s:TextInput  id="SJH" width="140" editable="true" text="@{userInfo.mobile}"/>
+			<s:Label text="性别 &#xd;" width="34"/>
+			<s:TextInput  id="XB" width="140" editable="true" text="@{userInfo.sex}"/>
+		</mx:HBox>
+	</mx:FormItem>
+	<mx:FormItem  label="通讯地址" x="32" y="79" width="387">
+		<mx:HBox verticalAlign="middle">
+			<s:TextInput  id="TXDZ" width="318" editable="true" text="@{userInfo.address}"/>
+		</mx:HBox>
+	</mx:FormItem>
+	<mx:FormItem  label="邮箱地址" x="32" y="111" width="387">
+		<mx:HBox verticalAlign="middle">
+			<s:TextInput  id="YXDZ" width="318" editable="true" text="@{userInfo.email}"/>
+		</mx:HBox>
+	</mx:FormItem>
+	<s:Button x="267" y="182" label="保存" click="save()"/>
+	<s:Button x="349" y="182" label="取消" click="PopUpManager.removePopUp(this);"/>
+	<mx:FormItem  label="巡查范围" x="32" y="144" width="387">
+		<mx:HBox verticalAlign="middle">
+			<s:TextInput  id="XCFWQD" width="121" editable="true" text="@{userInfo.xcfwqd}"/>
+			<s:Label text="至"/>
+			<s:TextInput  id="XCFWZD" width="121" editable="true" text="@{userInfo.xcfwzd}"/>
+		</mx:HBox>
+	</mx:FormItem>
+</s:TitleWindow>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" headerHeight="25" title="即时上报"
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" layout="absolute" width="566" height="450" showCloseButton="true" close="PopUpManager.removePopUp(this)" borderVisible="true">
+	<fx:Script>
+		<![CDATA[
+			import flash.utils.flash_proxy;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+
+			public var servletContent:String = "";
+			[Bindable]
+			private var _progressid:Object = null;
+			[Bindable]
+			public var isreadonly:Boolean = false;
+			
+			public function set progressid(value:Object):void
+			{
+				_progressid = value;
+			}
+			public function get progressid():Object
+			{
+				return _progressid;
+			}
+
+			protected function submit(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(_progressid==null) return;
+				if(fkyj.text == "")
+				{
+					Alert.show("请填写反馈意见");
+					return;
+				}
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url =servletContent + "/phone/PDAServlet?o=updata";
+				httpservice.addEventListener(ResultEvent.RESULT,resultHandler);
+				httpservice.addEventListener(FaultEvent.FAULT,faultHandler);
+				httpservice.method = "POST";
+				var param:Object = new Object;
+				param.fkyj =fkyj.text;
+				param.pid = _progressid.id;
+				param.t =  _progressid.lx;
+				httpservice.send(param);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				
+				Alert.show(event.message.toString());
+			}
+			
+			private function resultHandler(event:ResultEvent):void
+			{
+				var httpSendMSG:HTTPService = new HTTPService;
+				httpSendMSG.url= "http://10.23.97.247/androidpn/notification.do?action=send";
+				httpSendMSG.method = "POST";
+				httpSendMSG.addEventListener(ResultEvent.RESULT, sendHander);
+				var paramOjb:Object = new Object;
+				paramOjb.broadcast = "N";
+				paramOjb.username = _progressid.loginname;
+				paramOjb.title = "消息提醒";
+				paramOjb.message = "管理员已反馈编号" + _progressid.bh + "的业务，反馈意见为:" + fkyj.text;
+				paramOjb.uri = BH.text;
+				httpSendMSG.send(paramOjb);
+				PopUpManager.removePopUp(this);
+				this.dispatchEvent(new Event("NEWCLOSE"));
+			}
+			
+			private function sendHander(event:ResultEvent):void
+			{
+//				Alert.show("发送成功");
+			}
+			
+			private function showpic():void
+			{
+				ExternalInterface.call("showpic",servletContent,_progressid.id);
+			}
+
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="91" y="11" text="编号"/>
+	<s:TextInput x="131" y="6" id="BH" width="121" editable="false" text="{_progressid.bh}"/>
+	<mx:Form x="48" y="17" width="230" borderVisible="false" verticalGap="3">
+			<mx:FormItem  label="时间">
+				<s:TextInput  id="SJ" width="121" editable="false" text="{_progressid.sj}"/>
+			</mx:FormItem>
+			<mx:FormItem label="严重程度">
+				<s:TextInput  id="YZCD" width="121" text="{_progressid.yzcd}" editable="false"/>
+			</mx:FormItem>		
+	</mx:Form>
+	<mx:Form width="278" x="284" y="16" borderVisible="false" verticalGap="3">
+			<mx:FormItem  label="异常情况名称">
+				<s:TextInput id="YCQKMC" width="155" editable="false" text="{_progressid.ycqkmc}"/>
+			</mx:FormItem>
+			<mx:FormItem  label="异常情况部位">
+				<s:TextInput  id="YCQKBW" width="155" editable="false" text="{_progressid.ycqkbw}"/>
+			</mx:FormItem>		
+	</mx:Form>
+	<mx:Form x="1" y="67" width="561" borderVisible="false" verticalGap="3" >
+			<mx:FormItem   label="地理位置">
+				<s:TextInput  id="DLWZ" width="413" editable="false" text="{_progressid.qy + ',' + _progressid.hd + ',' + _progressid.dlwz}"/>
+			</mx:FormItem>
+			<mx:FormItem  label="所属项目工程">
+				<s:TextInput  id="SSXMGC" width="413" editable="false" text="{_progressid.ssxmgc}"/>
+			</mx:FormItem>		
+			<mx:FormItem  label="异常断面结构形式">
+				<s:TextInput  id="YCDMJGXS" width="413" editable="false" text="{_progressid.ycdddmjgxs}"/>
+			</mx:FormItem>		
+			<mx:FormItem  label="统编桩号范围">
+				<mx:HBox verticalAlign="middle">
+					<s:TextInput  id="TBZHQD" width="140" editable="false" text="{_progressid.tzbhqdfw}"/>
+					<s:Label text="至"/>
+					<s:TextInput  id="TBZHZD" width="140" editable="false" text="{_progressid.tzbhzdfw}"/>
+				</mx:HBox>
+			</mx:FormItem>		
+			<mx:FormItem  label="工程桩号范围">
+				<mx:HBox verticalAlign="middle">
+					<s:TextInput  id="GCZHQD" width="140" editable="false" text="{_progressid.gcbhqdfw}"/>
+					<s:Label text="至"/>
+					<s:TextInput  id="GCZHZD" width="140" editable="false" text="{_progressid.gcbhzdfw}"/>
+				</mx:HBox>
+			</mx:FormItem>		
+			<mx:FormItem label="描述">
+					<s:TextArea   height="40" width="413" editable="false" text="{_progressid.ms}"/>
+			</mx:FormItem>
+			<mx:FormItem label="原因分析">
+					<s:TextArea   width="413" height="40" editable="false" text="{_progressid.yyfx}"/>
+			</mx:FormItem>
+			<mx:FormItem label="建议">
+					<s:TextArea   width="413" height="40" editable="false" text="{_progressid.jy}"/>
+			</mx:FormItem>
+			<mx:FormItem label="管理员反馈意见" required="true">
+				<mx:TextArea borderColor="#FC5F35" id="fkyj" editable="{!isreadonly}" width="413" height="40" text="{_progressid.fkyj}"/>
+			</mx:FormItem>
+			
+	</mx:Form>
+	<s:Button label="发送反馈意见" click="submit(event)" x="453" y="389" visible="{!isreadonly}"/>
+	<s:Button x="475" y="7" label="查看附件" click="showpic()"/>
+</mx:TitleWindow>

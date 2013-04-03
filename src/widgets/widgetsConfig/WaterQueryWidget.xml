@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<configuration>
+	<labels>
+		<waterquerylabel>水位查询</waterquerylabel>
+		<rainquerylabel>雨情查询</rainquerylabel>
+	</labels>
+	<locations>
+		<location name="所有" x="" y=""/>
+		<location name="鸦岗" x="" y=""/>
+		<location name="黄埔" x="" y=""/>
+		<location name="中大" x="" y=""/>
+	</locations>
+</configuration>

@@ -1,0 +1,789 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:esri="http://www.esri.com/2008/ags"
+					xmlns:fx="http://ns.adobe.com/mxml/2009"
+					xmlns:s="library://ns.adobe.com/flex/spark"
+					xmlns:mx="library://ns.adobe.com/flex/mx"
+					xmlns:mxeffects="com.adobe.ac.mxeffects.*"
+					xmlns:flash="flash.text.*"
+					xmlns:viewer="com.esri.viewer.*"
+					xmlns:widgets="widgets.*"
+					xmlns:Dfgc="widgets.Dfgc.*"
+					x="450" y="400"
+					widgetConfigLoaded="init()" width="450">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	
+	<viewer:states>
+		<s:State name="main"/>
+		<s:State name="gcd"/>
+	</viewer:states>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace esri "http://www.esri.com/2008/ags";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace mxeffects "com.adobe.ac.mxeffects.*";
+		@namespace flash "flash.text.*";
+		@namespace viewer "com.esri.viewer.*";
+		@namespace widgets "widgets.*";
+		
+		.formLabelStyle {
+			vertical-align:middle;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			
+			import flash.utils.flash_proxy;
+			
+			import com.esri.ags.events.QueryEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.Query;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.Fault;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			
+			import spark.components.supportClasses.ItemRenderer;
+			
+			[Bindable] 
+			public var years:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var GcbgAL:ArrayList; 
+			[Bindable]
+			private var dfbg:Dfgc; 
+			[Bindable]
+			private var dfdd:Dfgc; 
+			[Bindable]
+			private var gcdiduanAL:ArrayList; 
+			[Bindable]
+			private var showedit:Boolean; 
+			[Bindable]
+			private var ddshowedit:Boolean; 
+			[Bindable]
+			private var gcbgLabel:String;
+			[Bindable]
+			private var dianarray:Array;
+			[Bindable]
+			private var gcdLabel:String;
+			private var servletcontext:String;
+			private const ICON_URL:String = "assets/images/";
+		    private var addstatus:int=0;
+			private var selectitem:Object;
+			private var inputdh:String;
+			private var inputtbzh:String;
+			private var resaddid:ArrayList; 
+			
+			private var layerid:String;
+			private var extent:String="";
+			public function init():void
+			{
+				try{
+					showedit=false;
+				GcbgAL=new ArrayList();
+				resaddid=new ArrayList();
+				gcdiduanAL=new ArrayList();
+				servletcontext = this.configData.configXML.servletcontext;
+				gcbgLabel=configXML.labels.gcbglabel || "观测报告";
+				gcdLabel=configXML.labels.gcdlabel || "观测点";
+				layerid=configXML.QueryLayer.layerid || "";
+				wTemplate.addTitlebarButton(ICON_URL + "statistics.png", gcbgLabel, gcbglod,false);
+				wTemplate.addTitlebarButton(ICON_URL + "i_pin2.png", gcdLabel, gcdlod,false);
+				addgcbg();
+			}
+			catch( e:Error)
+			{
+				Alert.show(e.toString());
+			}
+				
+				
+			}
+			private function addgcbg()
+			{
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url= servletcontext + "/dfgc/gccxServlet";
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				var params:URLVariables = new URLVariables();                               
+				params.sty = "gcbg"; 
+				httpservice.addEventListener(ResultEvent.RESULT,lodhandler);
+				httpservice.send(params);
+			}
+			private function addgcdd()
+			{
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url= servletcontext + "/dfgc/gccxServlet";
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				var params:URLVariables = new URLVariables();                               
+				params.sty = "gcdd"; 
+				httpservice.addEventListener(ResultEvent.RESULT,lodddhandler);
+				httpservice.send(params);
+			}
+			
+			private function lodddhandler(event:ResultEvent):void
+			{
+				gcdiduanAL.removeAll();
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				
+				var jsonValues:Array = jsonObject["values"] as Array;
+				if(jsonValues==null) return; 
+				var colunms:Array = new Array;
+				for(var i:int = 0;i<jsonValues.length;i++)
+				{ 
+					var   dfbgcon:Dfgc=new Dfgc();
+					dfbgcon.id = jsonValues[i].id as String;
+					dfbgcon.name = jsonValues[i].gcmc as String;
+					dfbgcon.extent = jsonValues[i].extent as String;
+					dfbgcon.userCreated=true;
+					dfbgcon.gcsj =jsonValues[i].createtime as String;
+					gcdiduanAL.addItem(dfbgcon);
+					
+				}	
+			}
+			private function lodhandler(event:ResultEvent):void
+			{
+				GcbgAL.removeAll();
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				
+				var jsonValues:Array = jsonObject["values"] as Array;
+				if(jsonValues==null) return; 
+				var colunms:Array = new Array;
+				for(var i:int = 0;i<jsonValues.length;i++)
+				{ 
+					var   dfbgcon:Dfgc=new Dfgc();
+					dfbgcon.name = jsonValues[i].name as String;
+					dfbgcon.id = jsonValues[i].id as String;
+					dfbgcon.years = jsonValues[i].years as String;
+					dfbgcon.gcyf = jsonValues[i].gcyf as String;
+					dfbgcon.bgbh = jsonValues[i].bgbh as String;
+					dfbgcon.gcdd = jsonValues[i].gcdd as String;
+					dfbgcon.gcmc = jsonValues[i].gcmc as String;
+					dfbgcon.times = jsonValues[i].times as String;
+					dfbgcon.userCreated=true;
+					dfbgcon.gcsj =jsonValues[i].years+"年" +jsonValues[i].gcyf+"月";
+					GcbgAL.addItem(dfbgcon);
+					
+				}	
+			}
+			private function gcbglod():void
+			{
+				this.currentState = "main";
+				wTemplate.selectedTitlebarButtonIndex = 1;
+			}
+			private function gcdlod():void
+			{
+				this.currentState = "gcd";
+				wTemplate.selectedTitlebarButtonIndex = 2;
+				addgcdd();
+			}
+			private function showgcbg(event:Event):void
+			{
+				bglist.visible=false;
+				bgcontext.visible=true;
+				dfbg=ItemRenderer(event.target).data as Dfgc;
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url= servletcontext + "/dfgc/gccxServlet";
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				var params:URLVariables = new URLVariables();                               
+				params.sty = "gcgc"; 
+				params.id = dfbg.id; 
+				httpservice.addEventListener(ResultEvent.RESULT,lodgchandler);
+				httpservice.send(params);
+				
+				
+			}
+			
+			private function lodgchandler(event:ResultEvent):void
+			{
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+//				dianarray= jsonObject["values"] as Array;
+				rcDataGrid.dataProvider=jsonObject["values"] as Array;
+				
+			}
+			private function removegcbg(event:Event):void
+			{
+				
+			}
+			private function removegcdiduan(event:Event):void
+			{
+				dfdd=ItemRenderer(event.target).data as Dfgc;
+				Alert.yesLabel="确定";  
+				Alert.noLabel="取消";  
+				Alert.show("是否删除"+dfdd.name+"!","提示",3,this,onCloseHandler);
+			}
+			internal function onCloseHandler(evt:CloseEvent):void  
+			{
+				if(evt.detail==Alert.YES)
+				{
+					var httpservice:HTTPService = new HTTPService;
+					httpservice.url= servletcontext + "/dfgc/gccxServlet";
+					httpservice.method = "POST";
+					httpservice.resultFormat = "text";
+					var params:URLVariables = new URLVariables();                 
+					//这个user,psw就是传入后台的参数user,jsp就用 request.getParameter("user")来取                 
+					              
+					params.sty = "deldiduan"; 
+					params.id = dfdd.id+"";
+					httpservice.addEventListener(ResultEvent.RESULT,deldiduanhandler);
+					httpservice.send(params);
+				}
+			
+			}
+			private function deldiduanhandler(event:ResultEvent):void
+			{
+				var res:String=event.result.toString();
+				if(res.substring(0,4)=="true")
+				{
+					gcdiduanAL.removeItem(dfdd);
+					
+				}
+				else
+				{
+					Alert.show("删除失败！");
+				}
+			}
+			private function showgcdiduan(event:Event):void
+			{          addstatus=1;
+				ddedits.visible=true;
+								diduanlist.visible=false;
+								ddcontext.visible=true;
+								dfdd=ItemRenderer(event.target).data as Dfgc;
+								lodgcdian();
+				
+				
+			}
+			private function lodgcdian():void
+			{
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url= servletcontext + "/dfgc/gccxServlet";
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				var params:URLVariables = new URLVariables();                               
+				params.sty = "ddgcd"; 
+				params.id = dfdd.id; 
+				httpservice.addEventListener(ResultEvent.RESULT,lodgcdianhandler);
+				httpservice.send(params);
+			}
+			private function lodgcdianhandler(event:ResultEvent):void
+			{
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+//				var jsonValues:Array = jsonObject["values"] as Array;
+//				ddDataGrid.dataProvider=jsonValues;
+				dianarray= jsonObject["values"] as Array;
+				
+			}
+			
+			private function addnewdiduan():void
+			{
+				diduanlist.visible=false;
+				ddcontext.visible=true;
+				ddshowedit=true;
+				dianarray=new Array();
+				
+				addstatus=2;
+				dfdd=null;
+				ddedits.visible=false;
+				
+			}
+			private function addnew():void
+			{
+				bglist.visible=false;
+				bgcontext.visible=true;
+				showedit=true;
+				bgedit.visible=false;
+				
+			
+				
+			}
+			private function wTemplate_closedHandler(event:Event):void
+			{}
+			private function resoultData_doubleClickHandler(event:Event):void
+			{
+				var grid:DataGrid = event.currentTarget as DataGrid;
+				selectitem=grid.selectedItem;
+				// TODO Auto-generated method stub
+				
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url= servletcontext + "/dfgc/gccxServlet";
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				var params:URLVariables = new URLVariables();                               
+				params.sty = "gcd"; 
+				params.id = selectitem.id; 
+				httpservice.addEventListener(ResultEvent.RESULT,lodgcdhandler);
+				httpservice.send(params);
+				
+			}
+			private function ddsoultData_doubleClickHandler(event:Event):void
+		{
+//				var grid:DataGrid = event.currentTarget as DataGrid;
+//				selectitem=grid.selectedItem;
+//				// TODO Auto-generated method stub
+//				
+//				var httpservice:HTTPService = new HTTPService;
+//				httpservice.url= servletcontext + "/dfgc/gccxServlet";
+//				httpservice.method = "POST";
+//				httpservice.resultFormat = "text";
+//				var params:URLVariables = new URLVariables();                               
+//				params.sty = "gcd"; 
+//				params.id = selectitem.id; 
+//				httpservice.addEventListener(ResultEvent.RESULT,lodgcdhandler);
+//				httpservice.send(params);
+				
+			}
+			private function lodgcdhandler(event:ResultEvent):void
+			{
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				var form:DfgcDdcl =PopUpManager.createPopUp(this.parentApplication.parent,DfgcDdcl,false) as DfgcDdcl;
+				form.servletContent = this.servletcontext;
+				form.progressid =selectitem;
+				form.gcid=selectitem.id;
+				form.times=dfbg.times;
+				
+				form.rcDataGrid.dataProvider=jsonValues;
+				PopUpManager.centerPopUp(form);
+				
+			}
+			private function progress():void
+			{
+				bglist.visible=true;
+				bgcontext.visible=false;
+		 	    showedit=false;
+			}
+			private function edit():void
+			{
+				showedit=true;
+			}
+			private function saveedit():void
+			{
+			}
+			private function adddiduan():void
+			{
+			}
+			private function deldiduan():void
+			{
+				
+			}
+			private function ddprogress():void
+			{
+			    diduanlist.visible=true;
+				ddcontext.visible=false;
+				ddshowedit=false;
+			}
+			private function ddedit():void
+			{
+				ddshowedit=true;
+				
+			}
+			private function ddsaveedit():void
+			{    doquery();
+				
+			}
+			private function adddiduanhandler(event:ResultEvent):void
+			{  try
+			      {
+				var res:String=event.result.toString();
+				if(res.substring(0,4)=="true")
+				{
+					resaddid=new ArrayList();
+					ddcontext.visible=false;
+					addgcd.visible=false;
+					diduanlist.visible=true;
+					ddsaveedits.visible=false;
+					ddedits.visible=true;
+					addgcdd();
+				}
+				else
+				{
+					Alert.show("保存失败！");
+				}
+			}catch (e:Error)
+			{
+				Alert.show(e.message);
+			}
+			}
+			private function adddian():void
+			{
+				ddcontext.visible=false;
+				addgcd.visible=true;
+				
+				
+			}
+			private function deldian():void
+			{
+				selectitem=ddDataGrid.selectedItem;
+				if(selectitem!=null)
+				{
+				Alert.yesLabel="确定";  
+				Alert.noLabel="取消";  
+				Alert.show("是否删除"+selectitem.dh+"!","提示",3,this,ondelgcdHandler);
+				}
+			}
+			internal function ondelgcdHandler(evt:CloseEvent):void  
+			{
+				if(evt.detail==Alert.YES)
+				{
+					var httpservice:HTTPService = new HTTPService;
+					httpservice.url= servletcontext + "/dfgc/gccxServlet";
+					httpservice.method = "POST";
+					httpservice.resultFormat = "text";
+					var params:URLVariables = new URLVariables();                 
+					//这个user,psw就是传入后台的参数user,jsp就用 request.getParameter("user")来取                 
+					
+					params.sty = "delgcd"; 
+					params.id = selectitem.id+"";
+					httpservice.addEventListener(ResultEvent.RESULT,delgcdhandler);
+					httpservice.send(params);
+				}
+				
+			}
+			private function delgcdhandler(event:ResultEvent):void
+			{
+				var res:String=event.result.toString();
+				if(res.substring(0,4)=="true")
+				{
+					(ddDataGrid.dataProvider as ArrayCollection).removeItemAt(ddDataGrid.selectedIndex);
+				}
+				else
+				{
+					Alert.show("删除失败！");
+				}
+			}
+			
+			private function addnewdian():void
+			{
+			   inputdh=adddh.text;
+			  inputtbzh=addtbzh.text;
+			  if(inputdh==""||inputdh==null||inputtbzh==""||inputtbzh==null)
+			  {
+				  Alert.show("点号或统编桩号不能为空");
+				  return;
+			  }
+			  var httpservice:HTTPService = new HTTPService;
+			  httpservice.url= servletcontext + "/dfgc/gccxServlet";
+			  httpservice.method = "POST";
+			  httpservice.resultFormat = "text";
+			  var params:URLVariables = new URLVariables();                               
+			  params.sty = "adddh";
+			  if(addstatus==1)
+			  {
+				  params.fs = "id";
+				  params.id=dfdd.id;
+			  }
+			  else if(addstatus==2)
+			  {
+				  params.fs = "noid";
+			  }
+			  params.dh=inputdh;
+			  params.tbzh=inputtbzh;
+			  httpservice.addEventListener(ResultEvent.RESULT,adddhhandler);
+			  httpservice.send(params);
+			}
+			private function adddhhandler(event:ResultEvent):void
+			{  try
+			{
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				var resid:String=jsonObject["id"] as String;
+				resaddid.addItem(resid);
+				if(resid!=null)
+				{
+					if(addstatus==1)
+					{
+						lodgcdian();
+					}
+					else if(addstatus==2)
+					{
+						var jsonObj:Object = new Object();
+						jsonObj.id=resid;
+						jsonObj.dh=inputdh;
+						jsonObj.tbzh=inputtbzh;						
+					    dianarray[dianarray.length]=jsonObj;
+						ddDataGrid.dataProvider=dianarray;
+					}
+					ddcontext.visible=true;
+					addgcd.visible=false;
+				}
+				else
+				{
+					Alert.show("创建失败!");
+				}
+			}catch (e:Error)
+			{
+				Alert.show(e.message);
+			}
+			}
+			private function proadd():void
+			{
+				ddcontext.visible=true;
+				addgcd.visible=false;
+			}
+			private function doquery():void
+			{
+				var queryTask:QueryTask = new QueryTask;
+				queryTask.url = layerid;
+				queryTask.addEventListener(QueryEvent.EXECUTE_COMPLETE,queryTaskHandler);
+				queryTask.addEventListener(FaultEvent.FAULT,queryTaskErr)
+//				queryTask.useAMF = false;
+				var query:Query = new Query;
+				query.returnGeometry = true;
+				var bhwhere:String;
+				var tb:ArrayCollection=ddDataGrid.dataProvider as ArrayCollection;
+				if(tb.length<1)
+				{
+					bhwhere="TBZH='不存在'";
+					
+				}
+				for(var i:int=0;i<tb.length;i++)
+				{
+					var tbzh:Object=tb.getItemAt(i);
+					if(i==0)
+					{
+						bhwhere="TBZH='"+tb[i].tbzh +"'";
+					}
+					else
+					{
+						bhwhere=bhwhere+" or TBZH='"+tb[i].tbzh +"'";
+					}
+				}
+				
+//				query.outFields = ["*"];
+//			query.geometry = event.graphic.geometry;
+				query.where=bhwhere;
+				queryTask.execute(query);
+			}
+			private function queryTaskErr(event:FaultEvent ):void
+			{
+				Alert.show(event.fault.faultString);
+			}
+			private function queryTaskHandler(event:QueryEvent):void
+			{    
+				var geo:Polygon= new Polygon();;
+				if(event.featureSet!=null && event.featureSet.features.length>0)
+				{
+					var pointArray:Array=new Array();
+					for(var i:int;i<event.featureSet.features.length;i++)
+					{
+				       var p:MapPoint=event.featureSet.features[i].geometry as MapPoint;
+					   pointArray.push(p);
+					}
+					geo.addRing(pointArray);
+					extent=geo.extent.xmin.toString()+","+geo.extent.ymin.toString()+","+geo.extent.xmax.toString()+","+geo.extent.ymax.toString();
+				}
+				
+				var gcmc:String=ddmc.text;
+				var savedata:String;
+				for(var i:int=0;i<resaddid.length;i++)
+				{
+					if(i==0)
+					{
+						savedata="  id="+resaddid.getItemAt(i);
+					}
+					else
+					{
+						savedata=savedata+"  or id="+resaddid.getItemAt(i);
+					}
+				}
+				
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url= servletcontext + "/dfgc/gccxServlet";
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				var params:URLVariables = new URLVariables();  
+				params.sty = "adddiduan";
+				params.gcmc=gcmc;
+				if(resaddid.length>0)
+				{    params.ext = "true";
+					if(addstatus==1)
+					{
+						params.fs = "update";
+						params.id=dfdd.id;
+					}
+					else if(addstatus==2)
+					{
+						params.fs = "insert";
+						params.id=savedata;
+					}
+					
+					params.extent=extent;
+				}
+				else
+				{ params.ext = "false";
+					if(addstatus==1)
+					{
+						params.fs = "update";
+						params.id=dfdd.id;
+					}
+					else if(addstatus==2)
+					{
+						params.fs = "insert";
+						//						params.id=savedata;
+					}
+					params.extent=extent;
+				}
+				httpservice.addEventListener(ResultEvent.RESULT,adddiduanhandler);
+				httpservice.send(params);
+			}
+			
+		]]>
+	</fx:Script>
+	<viewer:WidgetTemplate id="wTemplate"
+						   width="450" height="400" closed="wTemplate_closedHandler(event)">
+		
+	
+	<s:Group id="main"
+			 width="100%" height="100%"
+			 visible="false"
+			 visible.main="true">
+		<s:VGroup width="100%"  height="100%" top="10"  id="bglist"  visible="true">
+			<s:HGroup width="100%" verticalAlign="middle"  height="40" >
+				<s:Button label="新增" width="100" click="addnew()"/>
+			</s:HGroup>
+			<s:Scroller width="100%" height="100%" top="60" >
+				<Dfgc:DfgcDataGroup id="GcbdDG"
+									  DfgcClick="showgcbg(event)"
+									  DfgcDelete="removegcbg(event)"
+									  dataProvider="{GcbgAL}">
+					<Dfgc:layout>
+						<s:VerticalLayout gap="2"
+										  horizontalAlign="justify"
+										  useVirtualLayout="true"/>
+					</Dfgc:layout>
+				</Dfgc:DfgcDataGroup>
+			</s:Scroller>	
+		</s:VGroup>
+		<s:VGroup width="100%"  height="100%"   id="bgcontext"  visible="false">
+			<s:HGroup width="100%" verticalAlign="middle" height="30">
+			<s:Button left="30" label="返回" width="100" click="progress()"/>
+			<s:Button id="bgedit" label="编辑" width="100" click="edit()"/>
+			<s:Button id="saveedits" label="保存编辑" width="100" click="saveedit()" visible="{showedit}" />	
+			</s:HGroup>
+			<s:HGroup width="100%" verticalAlign="middle" height="25" top="30">
+				<s:Label text="报告名称" left="20"/> 
+				<s:TextInput id="bgmc" width="250"  text="{dfbg.name}" editable="{showedit}"/>
+				<s:Label text="第" left="20"/> 
+				<s:TextInput id="times" width="30"  text="{dfbg.times}" editable="{showedit}"/>
+				<s:Label text="次" left="20"/> 
+				
+			</s:HGroup>
+				
+			<s:VGroup width="100%" height="75"  top="55" >
+				<s:HGroup width="100%" verticalAlign="middle" height="25">
+				<s:Label text="编    号" left="20"/> 
+				<s:TextInput id="bh" width="150"  text="{dfbg.bgbh}" editable="{showedit}"/>
+					<s:Label text="时  间" left="20" width="40"/> 
+					<s:TextInput id="nf" width="50"  text="{dfbg.years}" editable="{showedit}"/>
+					<s:Label text="年" left="20" /> 
+					<s:TextInput id="yf" width="50"  text="{dfbg.gcyf}" editable="{showedit}"/>
+					<s:Label text="月" left="20" /> 
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle" height="25">
+					<s:Label text="工程名称" left="20"/> 
+					<s:TextInput id="gcmc" width="100%"  text="{dfbg.gcmc}" editable="{showedit}"/>
+				</s:HGroup>	
+				<s:HGroup width="100%" verticalAlign="middle" height="25">
+					<s:Label text="工程地点" left="20"/> 
+					<s:TextInput id="gcdd" width="100%"  text="{dfbg.gcdd}" editable="{showedit}"/>
+				</s:HGroup>	
+			</s:VGroup>
+			<s:HGroup width="100%" verticalAlign="middle" height="25">
+				<s:Label text="重点堤段:" left="20"/> 
+				
+			</s:HGroup>	
+				
+					<mx:DataGrid id="rcDataGrid" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)" x.main="0" y.main="10">
+						<mx:columns>
+							<mx:DataGridColumn headerText="编号" dataField="bh"/>
+							<mx:DataGridColumn headerText="堤段名称" dataField="gcmc"/>	
+						</mx:columns>
+					</mx:DataGrid>
+		
+			<s:HGroup width="100%" verticalAlign="middle" height="30">
+				<s:Button left="30" label="新增堤段" width="100" click="adddiduan()"/>
+				<s:Button label="删除堤段" width="100" click="deldiduan()"/>
+			</s:HGroup>	
+		</s:VGroup>
+	</s:Group>
+		<s:Group id="gcd"
+				 width="100%" height="100%"
+				 visible="false"
+				 visible.gcd="true">
+			
+			<s:VGroup width="100%"  height="100%" top="10"  id="diduanlist"  visible="true">
+				<s:HGroup width="100%" verticalAlign="middle"  height="40" >
+					<s:Button label="新增" width="100" click="addnewdiduan()"/>
+				</s:HGroup>
+				<s:Scroller width="100%" height="100%" top="60" >
+					<Dfgc:DfgcDataGroup id="gcdiduanDG"
+										DfgcClick="showgcdiduan(event)"
+										DfgcDelete="removegcdiduan(event)"
+										dataProvider="{gcdiduanAL}">
+						<Dfgc:layout>
+							<s:VerticalLayout gap="2"
+											  horizontalAlign="justify"
+											  useVirtualLayout="true"/>
+						</Dfgc:layout>
+					</Dfgc:DfgcDataGroup>
+				</s:Scroller>	
+			</s:VGroup>
+			<s:VGroup width="100%"  height="100%"   id="ddcontext"  visible="false">
+				<s:HGroup width="100%" verticalAlign="middle" height="30">
+					<s:Button left="30" label="返回" width="100" click="ddprogress()"/>
+					<s:Button id="ddedits" label="编辑" width="100" click="ddedit()"/>
+					<s:Button id="ddsaveedits" label="保存编辑" width="100" click="ddsaveedit()" visible="{ddshowedit}" />	
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle" height="25" top="30">
+					<s:Label text="堤段名称" left="20"/> 
+					<s:TextInput id="ddmc" width="250"  text="{dfdd.name}" editable="{ddshowedit}"/>
+				</s:HGroup>
+					
+				<s:HGroup width="100%" verticalAlign="middle" height="25">
+					<s:Label text="观测点:" left="20"/> 
+					
+				</s:HGroup>	
+				
+				<mx:DataGrid id="ddDataGrid" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="ddsoultData_doubleClickHandler(event)" dataProvider="{dianarray}">
+					<mx:columns>
+						<mx:DataGridColumn headerText="观测点号" dataField="dh"/>
+						<mx:DataGridColumn headerText="统编桩号" dataField="tbzh"/>	
+					</mx:columns>
+				</mx:DataGrid>
+				
+				<s:HGroup width="100%" verticalAlign="middle" height="30">
+					<s:Button left="30" label="新增观测点" width="100" click="adddian()"/>
+					<s:Button label="删除观测点" width="100" click="deldian()"/>
+				</s:HGroup>	
+			</s:VGroup>
+			<s:VGroup width="100%"  height="100%"   id="addgcd"  visible="false"  top="50"   horizontalAlign="center">
+				
+				<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center" height="25"   width.gcd="432" height.gcd="108">
+					<s:Label text="点号" /> 
+					<s:TextInput id="adddh" width="120"   editable="true"/>
+					<s:Label text="统编桩号" left="20"/> 
+					<s:TextInput id="addtbzh" width="120"   editable="true"/>
+				</s:HGroup>
+				<s:HGroup width="100%" verticalAlign="middle" height="30"  horizontalAlign="center">
+					
+					<s:Button label="确定" width="100" click="addnewdian()"  />
+					<s:Button label="返回" width="100" click="proadd()"/>
+				</s:HGroup>	
+			</s:VGroup>
+			
+		</s:Group>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

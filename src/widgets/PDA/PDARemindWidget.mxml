@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   layout="absolute"
+				   creationComplete="init()"  xmlns:components="com.esri.viewer.components.*" xmlns:PDA="widgets.PDA.*">
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace viewer "com.esri.viewer.*";
+		@namespace components "com.esri.viewer.components.*";
+		@namespace PDA "widgets.PDA.*";
+		
+		global
+		{
+			font-family:"宋体";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.layers.GraphicsLayer;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			
+			private var servletcontext:String;
+			[Bindable]
+			private var xcNum:Number = 0;
+			[Bindable]
+			private var wzNum:Number = 0;
+			private var graphicsLayer:GraphicsLayer = new GraphicsLayer();
+			private var timer:Timer;
+			private var timerHis:Timer;
+			[Bindable]
+			private var xcArray:Array = null;
+			[Bindable]
+			private var wzArray:Array = null;
+			private function init():void
+			{
+				servletcontext = this.configData.configXML.servletcontext;
+				
+				this.map.addLayer(graphicsLayer);
+				
+				getSBData();
+				getWZData();
+//				timerHis=new Timer(2000);
+//				timer=new Timer(40000);
+//				timer.addEventListener(TimerEvent.TIMER, onTimer);
+//				timerHis.addEventListener(TimerEvent.TIMER, onTimerHis);
+			}
+			protected function getSBData():void
+			{
+				// TODO Auto-generated method stub
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url = servletcontext + "/gis/StatisticServlet";
+				httpservice.addEventListener(ResultEvent.RESULT,resultHandler);
+				httpservice.method = "POST";
+				var param:Object = new Object;
+				param.s = "select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.isnew = 1 and t1.userid = t2.id order by sbsy desc";
+				httpservice.send(param);
+			}
+			
+			private function getWZData():void
+			{
+				var http:HTTPService = new HTTPService;
+				http.url = servletcontext + "/gis/StatisticServlet";
+				http.addEventListener(ResultEvent.RESULT,wzResultHandler);
+				http.method = "POST";
+				var p:Object = new Object;
+				p.s = "select 'wz' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd, t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.isnew = 1 and t1.userid = t2.id order by sbsy desc";
+				http.send(p);
+			}
+			
+			private function resultHandler(event:ResultEvent):void
+			{
+				if(event.result==null) return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				xcNum = jsonValues.length;
+				xcArray = jsonValues;
+			}
+			
+			private function wzResultHandler(event:ResultEvent):void
+			{
+				if(event.result==null) return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				wzNum = jsonValues.length;
+				wzArray = jsonValues;
+			}
+			
+			protected function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				getSBData();
+				getWZData();
+			}
+			
+			protected function wTemplate_closedHandler(event:Event):void
+			{
+
+			}
+			
+			protected function tabnavigator1_changeHandler(event:IndexChangedEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(event.newIndex == 1)
+				{
+					getWZData();
+				}
+				else
+				{
+					getSBData();
+				}
+				
+			}
+			
+			protected function resoultData_doubleClickHandler(event:MouseEvent):void
+			{
+				var grid:DataGrid = event.currentTarget as DataGrid;
+				// TODO Auto-generated method stub
+				if(grid.selectedItem == null) return;
+				var form:RCSBFormWindow =PopUpManager.createPopUp(this.parentApplication.parent,RCSBFormWindow,false) as RCSBFormWindow;
+				form.servletContent = this.servletcontext;
+				form.progressid = grid.selectedItem;
+				form.addEventListener("NEWCLOSE", closeHandler);
+				PopUpManager.centerPopUp(form);
+			}
+			
+			private function closeHandler(event:Event):void
+			{
+				getSBData();
+				getWZData();
+				Alert.show("发送成功");
+				
+			}
+
+			protected function tabnavigator1_creationCompleteHandler(event:FlexEvent):void
+			{
+//				getSBData();
+//				getWZData();
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:Move3D id="moveEffect"
+				  xFrom="-100" xTo="100" xBy="400" 
+				  zFrom="-100" zBy="200" zTo="0"
+				  repeatBehavior="reverse" />
+	</fx:Declarations>
+	<viewer:WidgetTemplate id="wTemplate"
+						   width="400" height="300" closed="wTemplate_closedHandler(event)">
+		<s:Group id="XCSB"
+				 width="100%" height="100%"
+				 visible="true"
+				 >
+			<s:VGroup width="100%" height="100%">
+				<s:HGroup verticalAlign="middle">
+					<s:Label paddingLeft="5" text="{'您有待处理业务:巡查共'+xcNum + '条,违章共' + wzNum + '条'}" fontWeight="bold" />
+					<mx:LinkButton icon="@Embed('assets/images/update.png')" label="刷新" click="linkbutton1_clickHandler(event)"/>
+				</s:HGroup>
+				<mx:TabNavigator width="100%" height="100%" change="tabnavigator1_changeHandler(event)" creationComplete="tabnavigator1_creationCompleteHandler(event)" >
+					<s:NavigatorContent width="100%" height="100%" label="巡查上报">
+						<mx:DataGrid id="rcDataGrid" dataProvider="{this.xcArray}" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)">
+							<mx:columns>
+								<mx:DataGridColumn headerText="编号" dataField="bh"/>
+								<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
+								<mx:DataGridColumn headerText="发送时间" dataField="sbsy" width="120"/>
+								<mx:DataGridColumn headerText="巡查员" dataField="xdy" width="60"/>
+							</mx:columns>
+						</mx:DataGrid>
+					</s:NavigatorContent>	
+					<s:NavigatorContent  width="100%" height="100%" label="违章上报">
+						<mx:DataGrid id="wzDataGrid"  dataProvider="{this.wzArray}" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)">
+							<mx:columns>
+								<mx:DataGridColumn headerText="编号" dataField="bh"/>
+								<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
+								<mx:DataGridColumn headerText="发送时间" dataField="sbsy" width="120"/>
+								<mx:DataGridColumn headerText="巡查员" dataField="xdy" width="60"/>
+							</mx:columns>
+						</mx:DataGrid>
+					</s:NavigatorContent>	
+				</mx:TabNavigator>
+			</s:VGroup>
+		</s:Group>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" xmlns:viewer="com.esri.viewer.*" xmlns:managers="com.esri.viewer.managers.*"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Style source="defaults.css" />
+	
+	<fx:Metadata>
+		[ResourceBundle("ViewerStrings")]
+	</fx:Metadata>
+	<viewer:ViewerContainer id="viewerContainer">
+		<viewer:configManager>
+			<managers:ConfigManager id="configManager"/>
+		</viewer:configManager>
+		<viewer:dataManager>
+			<managers:DataManager id="dataManager"/>
+		</viewer:dataManager>
+		<viewer:mapManager>
+			<managers:MapManager id="mapManager"/>
+		</viewer:mapManager>
+		<viewer:uiManager>
+			<managers:UIManager id="uiManager"/>
+		</viewer:uiManager>
+		<viewer:widgetManager>
+			<managers:WidgetManager id="widgetManager"/>
+		</viewer:widgetManager>
+	</viewer:ViewerContainer>
+</s:Group>

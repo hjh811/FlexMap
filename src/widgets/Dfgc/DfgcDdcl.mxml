@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" headerHeight="25" title="测量报告"
+														xmlns:s="library://ns.adobe.com/flex/spark" 
+														xmlns:mx="library://ns.adobe.com/flex/mx" layout="absolute" width="566" height="450" showCloseButton="true" close="PopUpManager.removePopUp(this)" borderVisible="true">
+	
+	
+	
+	<fx:Script>
+		<![CDATA[
+			import flash.utils.flash_proxy;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			public var gcid:String ="";
+			public var servletContent:String = "";
+			[Bindable]
+			private var _progressid:Object = null;
+			[Bindable]
+			private var showedit:Boolean = false;
+			[Bindable]
+			public var times:String ="";
+			public function set progressid(value:Object):void
+			{
+				_progressid = value;
+			}
+			public function get progressid():Object
+			{
+				return _progressid;
+			}
+			private function progress():void
+			{
+				showedit=false;
+			}
+			private function edit():void
+			{
+				showedit=true;
+			}
+			private function saveedit():void
+			{
+			}
+			private function resoultData_doubleClickHandler(event:Event):void
+			{}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:HGroup width="95%" verticalAlign="middle" height="30" top="10" left="14">
+		<s:Button left="30" label="返回" width="100" click="progress()"/>
+		<s:Button label="编辑" width="100" click="edit()"/>
+		<s:Button id="saveedits" label="保存编辑" width="100" click="saveedit()" visible="{showedit}" />	
+	</s:HGroup>
+	<s:HGroup width="95%" verticalAlign="middle" height="25" top="40" left="14">
+		<s:Label text="编       号 ：" left="20"/> 
+		<s:TextInput id="bh" width="150"  text="{_progressid.bh}" editable="{showedit}"/>
+	</s:HGroup>	
+	<s:HGroup width="95%" verticalAlign="middle" height="25" top="65" left="14">
+		<s:Label text="工 程  地 点：" left="20"/> 
+		<s:TextInput id="gcdd" width="150"  text="{_progressid.gcmc}" editable="{showedit}"/>
+		<s:Label text="观测仪器型号：" left="20" /> 
+		<s:TextInput id="yqxh" width="100%"  text="{_progressid.gcyqxh}" editable="{showedit}"/>
+	</s:HGroup>
+	<s:HGroup width="95%" verticalAlign="middle" height="25" top="90" left="14">
+		<s:Label text="首次观测日期：" left="20"/> 
+		<s:HGroup width="150"  height="100%" verticalAlign="middle" >
+		<s:TextInput id="fnf" width="50"  text="{_progressid.firstnf}" editable="{showedit}" left="10"/>
+		<s:Label text="年" left="20" /> 
+		<s:TextInput id="fyf" width="50"  text="{_progressid.firstyf}" editable="{showedit}"/>
+		<s:Label text="月" left="20" /> 	
+		</s:HGroup>
+		<s:Label text="上次观测日期：" left="20" /> 
+		<s:TextInput id="lnf" width="50"  text="{_progressid.lastnf}" editable="{showedit}"/>
+		<s:Label text="年" left="20" /> 
+		<s:TextInput id="lyf" width="50"  text="{_progressid.lastyf}" editable="{showedit}"/>
+		<s:Label text="月" left="20" /> 
+	</s:HGroup>
+	<s:HGroup width="95%" verticalAlign="middle" height="25" top="115" left="14">
+		<s:Label text="本次观测日期：" left="20"/> 
+		<s:HGroup width="150"  height="100%" verticalAlign="middle" >
+		<s:TextInput id="bnf" width="50"  text="{_progressid.thisnf}" editable="{showedit}"/>
+		<s:Label text="年" left="20" /> 
+		<s:TextInput id="byf" width="50"  text="{_progressid.thisyf}" editable="{showedit}"/>
+		<s:Label text="月" left="20" /> 
+		</s:HGroup>
+		<s:Label text="观 测  次 数：" left="20" /> 
+		<s:TextInput id="gccs" width="100%"  text="{times}" editable="{showedit}"/>
+	</s:HGroup>
+	<mx:DataGrid id="rcDataGrid" width="95%" height="270" top="140" left="14" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)" >
+		<mx:columns>
+			<mx:DataGridColumn headerText="点号" dataField="dh"/>
+			<mx:DataGridColumn headerText="首次观测值" dataField="firstgcz"/>
+			<mx:DataGridColumn headerText="上次观测值" dataField="nextgcz"/>
+			<mx:DataGridColumn headerText="本次观测值" dataField="thisgcz"/>
+			<mx:DataGridColumn headerText="本次位移量" dataField="thiswyl"/>
+			<mx:DataGridColumn headerText="累计位移量" dataField="ljwyl"/>
+		</mx:columns>
+	</mx:DataGrid>
+</mx:TitleWindow>

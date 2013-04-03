@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:viewer="com.esri.viewer.*" xmlns:components="com.esri.viewer.components.*" widgetConfigLoaded="init()"  layout="absolute">
+	<viewer:states>
+		<s:State name="XXTJ"/> 
+		<s:State name="TJJG"/> 
+	</viewer:states>
+	 
+	<viewer:transitions>
+		<s:Transition autoReverse="true" toState="*">
+			<s:Fade targets="{[XXTJ,TJJG]}"/>
+		</s:Transition>
+	</viewer:transitions>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<!--<s:LinearGradient id="myLG1" rotation="90">
+			<s:GradientEntry id="GradientEntry31" color="#00ff96" ratio="0"/>
+			<s:GradientEntry id="GradientEntry51" color="#ffffff" ratio="1"/>
+		</s:LinearGradient>
+		<s:LinearGradient id="myLG2" rotation="90">
+			<s:GradientEntry id="GradientEntry32" color="#9600ff" ratio="0"/>
+			<s:GradientEntry id="GradientEntry52" color="#ffffff" ratio="1"/> 
+		</s:LinearGradient>
+		<s:LinearGradient id="myLG3" rotation="90">
+			<s:GradientEntry id="GradientEntry33" color="#0096ff" ratio="0"/>
+			<s:GradientEntry id="GradientEntry53" color="#ffffff" ratio="1"/>
+		</s:LinearGradient>-->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.MapMouseEvent;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			
+			import spark.components.RadioButton;
+			private const ICON_URL:String = "assets/images/";
+			private var graphicsLayer:GraphicsLayer = new GraphicsLayer;
+			private var array:ArrayCollection  = new ArrayCollection;
+			[Bindable]
+			private var moduleAC:ArrayCollection;
+			private var servletcontext:String;
+			
+			private function init():void
+			{
+				if (configXML)
+				{
+					var moduleList:XMLList=configXML..module;
+					moduleAC=new ArrayCollection();
+					for (var i:Number=0; i < moduleList.length(); i++)
+					{
+						var moduleid:String=moduleList[i].@id;
+						var icon:String=moduleList[i].@icon;
+						var title:String=moduleList[i].@title;
+						var key:String=moduleList[i].@key;
+						var display:String=moduleList[i];
+						
+						
+						if (display == "true")
+						{
+							var modulemark:Object={icon: icon, title: title, display: display,key:key};
+							moduleAC.addItem(modulemark);
+						}
+					}
+					
+					var xmllist:XMLList = configXML.District.point;
+					for (var k:Number=0; k < xmllist.length(); k++)
+					{
+						var obj:Object = new Object;
+						obj.name=xmllist[k].@name;
+						obj.xy=xmllist[k].@xy;
+						array.addItem(obj);
+					}
+					
+					var layers:XMLList = configXML..layer;
+					for (var j:Number=0; j < layers.length(); j++)
+					{
+						layerComb.dataProvider = layers;
+					}
+				}
+				this.map.addLayer(graphicsLayer);
+				addTitleBarButtons();
+				this.map.addEventListener(MapMouseEvent.MAP_CLICK,mapClickHandler);
+				
+				servletcontext = this.configData.configXML.servletcontext;
+//				Alert.show(servletcontext);
+				layerComb_changeHandler();
+			}
+			
+			private function clickMoudel(event:Event):void
+			{
+				var modulemark:Object=event.currentTarget.infoData;
+				if (modulemark.key == "XXTJ")
+				{
+					showXXTJ();
+				}
+				else if (modulemark.key == "ZBDW")
+				{
+					showTJJG();
+				}
+			}
+			
+			private function mapClickHandler(event:MapMouseEvent):void
+			{
+//				Alert.show(this.map.extent.toString());
+			}
+			private function addTitleBarButtons():void
+			{
+//				wTemplate.addTitlebarButton(ICON_URL + "i_home.png", "主菜单", showMain);
+				wTemplate.addTitlebarButton(ICON_URL + "i_table.png", "统计条件", showXXTJ);
+				wTemplate.addTitlebarButton(ICON_URL + "i_edit.png", "统计结果", showTJJG);
+			}
+			
+			private function showMain():void
+			{
+				this.currentState = "main";
+				wTemplate.selectedTitlebarButtonIndex = 0; // used to indicate selected titlebar button when automatically switching state
+			}
+			
+			private function showXXTJ():void
+			{
+				this.currentState = "XXTJ";
+				wTemplate.selectedTitlebarButtonIndex = 0;
+			}
+			private function showTJJG():void
+			{
+				this.currentState = "TJJG";
+				wTemplate.selectedTitlebarButtonIndex = 1;
+			}
+			
+			private function clearPop():void
+			{
+				var InfoArray:Array=new Array();
+				var i:int;
+				for (i=0; i < map.numChildren; i++)
+				{
+					if (map.getChildAt(i).name.substr(0, 2).toUpperCase() == "TJ")
+					{
+						InfoArray.push(map.getChildAt(i));
+					}
+				}
+				for (i=0; i < InfoArray.length; i++)
+				{
+					map.removeChild(InfoArray[i]);
+				}
+				InfoArray=null;
+			}
+			
+			private function statistic(event:Event):void
+			{
+				clearPop();
+				tjDataGird.dataProvider = null;
+				tjTitle.text = "统计结果";
+//				if(layerComb.selectedItem==null) return;
+				
+				if(this.container.numElements>0)
+				{
+					
+					for(var i:int=0;i<this.container.numElements;i++)
+					{
+						var radiobutton:RadioButton = this.container.getElementAt(i) as spark.components.RadioButton;
+						if(radiobutton.selected)
+						{
+							var httpservice:HTTPService = new HTTPService;
+							httpservice.url = servletcontext + "/gis/StatisticServlet";
+							httpservice.addEventListener(ResultEvent.RESULT,resultHandler);
+							httpservice.method = "POST";
+							var param:Object = new Object;
+							
+							param.s=radiobutton.value.toString();
+							httpservice.send(param);
+							tjTitle.text = layerComb.selectedItem.@name + "统计结果";
+						}
+					}
+
+				}
+				else
+				{
+					return;
+				}
+				
+
+			}
+			
+			private function resultHandler(event:ResultEvent):void
+			{
+				if(event.result==null) return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				
+				for each(var ojb:Object in array)
+				{
+					var str:String = ojb.xy;
+					var chartInfoPopup:ChartInfoPopup = new ChartInfoPopup;
+					chartInfoPopup.name = "TJ" + ojb.name;
+					var chartData:ArrayCollection=new ArrayCollection;
+					for (var m:int=0; m <= jsonValues.length - 1; m++)
+					{
+						if(jsonValues[m]["航道"]==ojb.name)
+						{
+							chartData.addItem(jsonValues[m]);
+						}
+					}
+					chartInfoPopup.map = this.map;
+					chartInfoPopup.infoData = {point: new MapPoint(Number(str.split(",")[0]),Number(str.split(",")[1])),chartData:chartData};
+					this.map.addChild(chartInfoPopup);
+				}
+				
+				var jsonColumn:Array = jsonObject["columns"] as Array;
+				var columns:Array =new Array;
+				for(var k:int=0;k< jsonColumn.length;k++)
+				{
+					var column:DataGridColumn = new DataGridColumn;
+					column.dataField = jsonColumn[k].toString();
+					column.headerText = jsonColumn[k].toString();
+					columns.push(column);
+				}
+				tjDataGird.columns = columns;
+				tjDataGird.dataProvider= jsonValues;
+				showTJJG();
+				
+			}
+			
+			protected function wTemplate_closedHandler(event:Event):void
+			{
+//				queryInfoResultAC = null;
+				tjDataGird.dataProvider = null;
+				graphicsLayer.clear();
+				clearPop();
+			}
+			
+			protected function layerComb_changeHandler():void
+			{
+				// TODO Auto-generated method stub
+				this.container.removeAllElements();
+				if(this.layerComb.selectedItem!=null)
+				{
+					var sqllist:XMLList = this.layerComb.selectedItem.sql;
+					for (var i:Number=0; i < sqllist.length(); i++)
+					{
+						var rButton:RadioButton = new spark.components.RadioButton;
+						rButton.label = sqllist[i].@displayname;
+						rButton.value = sqllist[i].@table;
+						this.container.addElement(rButton);
+					}
+				    if(this.container.numElements>0)
+					{
+						var radiobutton:RadioButton = this.container.getElementAt(0) as spark.components.RadioButton;
+						radiobutton.selected = true;
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+	<viewer:WidgetTemplate id="wTemplate"
+						   width="375" height="265" closed="wTemplate_closedHandler(event)">
+		<!--<s:HGroup id="main"
+				  width="100%" height="100%"
+				  visible="false"
+				  visible.main="true" horizontalAlign="center">
+			<mx:Tile width="100%" height="100%" horizontalGap="1">
+				<mx:Repeater id="fRepeater" dataProvider="{moduleAC}">
+					<components:WidgetButtonControl infoData="{fRepeater.currentItem}" click="clickMoudel(event)">
+						
+					</components:WidgetButtonControl>
+				</mx:Repeater>
+			</mx:Tile>
+		</s:HGroup>-->
+		<s:VGroup id="XXTJ" width="100%" height="100%" visible="false" visible.XXTJ="true" gap="10">
+			<!--<s:HGroup  verticalAlign="middle" paddingLeft="15" paddingTop="5" paddingBottom="5">
+				<s:Label text="按航道统计" fontWeight="bold"/>
+			</s:HGroup>-->
+			<s:HGroup  verticalAlign="middle" paddingLeft="15" paddingTop="5">
+				<fx:Script>
+					<![CDATA[
+						import mx.events.ListEvent;
+					]]>
+				</fx:Script>
+				<s:Label text="堤防设施:"/>
+				<mx:ComboBox id="layerComb" labelField="@name" width="120"  height="23" fontFamily="宋体" change="layerComb_changeHandler()"/>
+			</s:HGroup>
+			<!--<s:HGroup  verticalAlign="middle" paddingLeft="15">
+				<s:Label text="分类字段:"/>
+				<mx:ComboBox id="typeComb" labelField="@name" width="120"  height="23" fontFamily="宋体"/>
+			</s:HGroup>-->
+			<s:VGroup width="100%" paddingLeft="15" paddingRight="10" gap="15">
+			<s:Label text="分类条件"/>
+			<s:BorderContainer id="container" width="100%" height="50" backgroundAlpha="0" left="15">
+				<s:layout>
+					<s:TileLayout requestedRowCount="3" requestedColumnCount="2" paddingLeft="10">
+						
+					</s:TileLayout>
+				</s:layout>
+				<!--<s:RadioButton label="航道" selected="true"/>
+				<s:RadioButton label="材质" selected="false"/>
+				<s:RadioButton label="航道、材质" selected="false"/>-->
+			</s:BorderContainer>
+			</s:VGroup>
+			<s:HGroup  verticalAlign="middle" paddingLeft="15">
+				<s:Button label="统计" click="statistic(event)"/>
+			</s:HGroup>
+	
+		</s:VGroup>
+		<s:VGroup id="TJJG" width="100%" height="100%"  visible="false" visible.TJJG="true">
+			<mx:Label id="tjTitle" text="统计结果"/>
+			<mx:DataGrid id="tjDataGird" width="100%" height="100%">
+				<mx:columns>
+					<mx:DataGridColumn headerText="航道" dataField="hd" />
+					<mx:DataGridColumn headerText="位置" dataField="hddetail" />
+					<mx:DataGridColumn headerText="数量" dataField="zs" />
+				</mx:columns>
+			</mx:DataGrid>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" creationComplete="init()" xmlns:supportClasses="com.esri.ags.skins.supportClasses.*" width="400" height="300" xmlns:chart="com.esri.viewer.components.chart.*" xmlns:amcharts="http://www.amcharts.com/com_internal">
+
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Map;
+			
+			import mx.controls.Alert;
+			
+			import com.esri.ags.events.ExtentEvent;
+			import com.esri.ags.events.PanEvent;
+			import com.esri.ags.geometry.MapPoint;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.components.Application;
+			
+			[Bindable]
+			private var _chartData:ArrayCollection;
+//			 var chartData:ArrayCollection = new ArrayCollection( [
+//				{country:"前左",litres:156.90},  
+//				{country:"前右",litres:131.10},
+//				{country:"后左",litres:115.80},  
+//				{country:"后右",litres:109.90},  
+//				{country:"西左",litres:108.30},  
+//				{country:"西右",litres:99.00}
+//				]); 
+			
+			private function init():void
+			{
+				map.addEventListener(PanEvent.PAN_UPDATE, repositionInfo);
+				map.addEventListener(ExtentEvent.EXTENT_CHANGE, repositionInfo);
+			}
+			
+			private var _map:Map;
+			
+			public function set map(value:Map):void
+			{
+				_map = value;
+			}
+			
+			public function get map():Map
+			{
+				return _map;
+			}
+			
+			private var _infoData:Object;
+			
+			public function set infoData(value:Object):void
+			{
+				_infoData = value;
+				_chartData = value.chartData;
+//				Alert.show(value.chartData);
+//				if (value)
+//				{
+					setInfoParameters();
+//				}
+//				else
+//				{
+//					currentState = "";
+//				}
+			}
+			
+			public function get infoData():Object
+			{
+				return _infoData;
+			}
+			
+			private function setInfoParameters():void
+			{
+				positionInfo();
+				
+//				infoIcon.source = infoData.icon;
+//				infoTitle.text = infoData.title;
+//				infoContent.text = infoData.content;
+//				
+//				//clear picture and link button
+//				infoImage.source = "";
+//				infoImage.height = 0;
+//				infoImage.visible = false;
+//				infoImage.includeInLayout = false;
+//				infoLink.visible = false;
+//				infoLink.includeInLayout = false;
+//				
+//				if (infoData.link)
+//				{
+//					var link:String = infoData.link as String;
+//					var pos:Number = link.length - 4;
+//					var sfx:String = link.substr(pos, 4).toLowerCase();
+//					if ((sfx == ".jpg") || (sfx == ".png") || (sfx == ".gif"))
+//					{
+//						infoImage.source = link;
+//						infoImage.height = 150;
+//						infoImage.visible = true;
+//						infoImage.includeInLayout = true;
+//					}
+//					else
+//					{
+//						infoLink.visible = true;
+//						infoLink.includeInLayout = true;
+//					}
+//				}
+//				
+//				//point icon based on direction
+//				if (infoData.content)
+//				{
+//					var content:String = infoData.content;
+//					if ((content.indexOf("BEARING: NE") != -1) || (content.indexOf("BEARING: SE") != -1) || (content.indexOf("BEARING: E") != -1))
+//					{
+//						flipIcon("RIGHT");
+//					}
+//					else
+//					{
+//						flipIcon("LEFT");
+//					}
+//				}
+			}
+			
+			public function positionInfo():void
+			{
+				if ((map.extent) && (infoData))
+				{
+					var pt:MapPoint = infoData.point;
+					var infoPt:Point = map.toScreen(pt);
+					this.x = infoPt.x-200;
+					this.y = infoPt.y-150;
+				}
+				
+			}
+			
+			public function repositionInfo(event:Event):void
+			{
+				if ((map.extent) && (infoData))
+				{
+					var pt:MapPoint = infoData.point;
+					var infoPt:Point = map.toScreen(pt);
+					this.x = infoPt.x-200;
+					this.y = infoPt.y-150;
+				}
+			}
+			
+			private function closeInfo():void
+			{
+				infoData = null;
+			}
+			
+
+		]]>
+	</fx:Script>
+	<chart:PieCharts  width="100%" height="100%" fontWeight="bold" depth="15" angle="30"  depth3D="15" dataProvider="{_chartData}" titleField="分类" valueField="总数"/> 
+</s:Group>

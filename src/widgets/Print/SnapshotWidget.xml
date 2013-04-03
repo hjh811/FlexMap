@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<configuration>
+	<imgdefaultname>地图输出</imgdefaultname>
+	<!-- for uncompiled version : please have a look at the ReadMe file if you enable the zip compression -->
+	<zipsaveenabled>true</zipsaveenabled>
+	<labels>
+			<snapshotlabel>地图输出</snapshotlabel>
+			<optionslabel>设置</optionslabel>
+			<snapshottxt>注：在地图上绘制要裁剪的范围</snapshottxt>
+			<savebuttonlabel>Save</savebuttonlabel>
+			<clearbuttonlabel>Reset</clearbuttonlabel>
+			<rectanglelabel>选择地图范围</rectanglelabel>
+			<quallabel>压缩质量</quallabel>
+			<imageformatlabel>图片格式</imageformatlabel>
+			<ziplabel>是否导出zip</ziplabel>
+	</labels>
+	<!-- other configuration parameters
+	<widgetautoresize>true</widgetautoresize>		
+	<widgetmaxresizewidth>600</widgetmaxresizewidth>
+	<widgetmaxresizeheight>400</widgetmaxresizeheight>
+	<prjfilesdir>widgets/Snapshot/PrjFiles/</prjfilesdir>-->		
+</configuration>

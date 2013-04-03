@@ -1,0 +1,2642 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+///////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2010-2011 Esri. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+///////////////////////////////////////////////////////////////////////////
+-->
+<!-- 
+Version 2.5.3 - 06/12/2012
+Info on previous versions is in the ReadMe.txt
+
+* Actual Widgets Name has changed from DrawWidget to eDrawWidget
+* Widget has been updated to use GeometryUtil area and length calculations.
+* Alignment of form items and labels fixed
+
+--> 
+<viewer:BaseWidget xmlns:esri="http://www.esri.com/2008/ags"
+				   xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:mxeffects="com.adobe.ac.mxeffects.*"
+				   xmlns:flash="flash.text.*"
+				   xmlns:viewer="com.esri.viewer.*"
+				   xmlns:widgets="widgets.*"
+				   xmlns:eDraw="widgets.eDraw.*"
+				   x="600" y="300"
+				   widgetConfigLoaded="init()"
+				  >
+	<viewer:states>
+		<s:State name="DRAW"/>
+		<s:State name="eDrawlist"/>
+		
+		<s:State name="SAVE"/>
+		
+	</viewer:states>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace esri "http://www.esri.com/2008/ags";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace mxeffects "com.adobe.ac.mxeffects.*";
+		@namespace flash "flash.text.*";
+		@namespace viewer "com.esri.viewer.*";
+		@namespace widgets "widgets.*";
+		
+		.formLabelStyle {
+			vertical-align:middle;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+//My Add
+			import com.esri.ags.Graphic;
+			import com.esri.ags.SpatialReference;
+			import com.esri.ags.Units;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.EditEvent;
+			import com.esri.ags.events.GeometryServiceEvent;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.symbols.SimpleMarkerSymbol;
+			import com.esri.ags.symbols.TextSymbol;
+			import com.esri.ags.tasks.GeometryServiceSingleton;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.ags.utils.GeometryUtil;
+			import com.esri.ags.utils.WebMercatorUtil;
+			import com.esri.viewer.AppEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.Fault;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			
+			import spark.components.supportClasses.ItemRenderer;
+			private const ICON_URL:String = "assets/images/";
+			private const TEXT_MODE:String = "text";
+			private const EPSG_GEOGRAPHIC:Number = 4326;
+			
+			//labels
+			[Bindable]
+			private var textLabel:String;
+			[Bindable]
+			private var textColorLabel:String;
+			[Bindable]
+			private var textFontLabel:String;
+			[Bindable]
+			private var textSizeLabel:String;
+			[Bindable]
+			private var textBoldLabel:String;
+			[Bindable]
+			private var textBoldTooltip:String;
+			[Bindable]
+			private var textItalicLabel:String;
+			[Bindable]
+			private var textItalicTooltip:String;
+			[Bindable]
+			private var textUnderlineLabel:String;
+			[Bindable]
+			private var textUnderlineTooltip:String;
+//My Add
+			[Bindable]
+			private var markerRotationLabel:String;
+			[Bindable]
+			private var textRotateLabel:String;
+//End My Add
+			//points
+			[Bindable]
+			private var addTextLabel:String;
+			[Bindable]
+			private var drawPointLabel:String;
+			[Bindable]
+			private var markerAlphaLabel:String;
+			[Bindable]
+			private var markerColorLabel:String;
+			[Bindable]
+			private var markerSizeLabel:String;
+			[Bindable]
+			private var markerStyleLabel:String;
+			[Bindable]
+			private var markerOutlineColorLabel:String;
+			[Bindable]
+			private var markerOutlineWidthLabel:String;
+			
+			// lines
+			[Bindable]
+			private var drawLineLabel:String;
+			[Bindable]
+			private var drawFreehandLineLabel:String;
+			[Bindable]
+			private var lineAlphaLabel:String;
+			[Bindable]
+			private var lineColorLabel:String;
+			[Bindable]
+			private var lineStyleLabel:String;
+			[Bindable]
+			private var lineWidthLabel:String;
+			
+			// polygons
+			[Bindable]
+			private var drawPolygonLabel:String;
+			[Bindable]
+			private var drawFreehandPolygonLabel:String;
+			[Bindable]
+			private var drawRectangleLabel:String;
+			[Bindable]
+			private var drawCircleLabel:String;
+			[Bindable]
+			private var drawEllipseLabel:String;
+			[Bindable]
+			private var fillAlphaLabel:String;
+			[Bindable]
+			private var fillColorLabel:String;
+			[Bindable]
+			private var fillStyleLabel:String;
+			[Bindable]
+			private var fillOutlineColorLabel:String;
+			[Bindable]
+			private var fillOutlineWidthLabel:String;
+//My Add
+			[Bindable]
+			private var fillOutlineAlphaLabel:String;
+			[Bindable]
+			private var PointXY:Boolean;
+			[Bindable]
+			private var pointsUnitsLabel:String;
+			[Bindable]
+			private var configPoint:ArrayList;
+//End My Add
+			[Bindable]
+			private var eDrawAL:ArrayList; 
+			[Bindable]
+			private var clearLabel:String;
+			private var clearFeatureLabel:String;
+			
+			private var areaLabel:String;
+			[Bindable]
+			private var areaUnitsLabel:String;
+			[Bindable]
+			private var distanceUnitsLabel:String;
+			[Bindable]
+			private var showMeasurements:Boolean;
+			[Bindable]
+			private var showmeasurementsLabel:String;
+			
+			[Bindable]
+			private var configArea:ArrayList;
+			[Bindable]
+			private var configDistance:ArrayList;
+			[Bindable]
+			private var graphicsLayer:GraphicsLayer;
+			[Bindable]
+			private var lodgraphicsLayer:GraphicsLayer;
+			[Bindable]
+			private var drawingPoint:Boolean;
+			[Bindable]
+			private var addingText:Boolean;
+			[Bindable]
+			private var drawingLine:Boolean;
+			[Bindable]
+			private var drawingPolygon:Boolean;
+			
+			private var drawMode:String;
+			private var lengthLabel:String;
+			private var perimeterLabel:String;
+			private var measurePt:MapPoint;
+			private var drawType:String;
+			private var drawStatus:String;
+			private var selectedDrawingIcon:Image;
+			private var lastDrawnGraphic:Graphic;
+			private var editGraphic:Graphic;
+			private var isEditing:Boolean;
+			private var measurementLabelShown:Boolean;
+			private var lastActiveEditType:String = "none"; // edit tool is not active
+//My Add   
+			private var servletcontext:String;
+			private var finishDrawing:Boolean;
+			private var WIDGET_URL:String = "assets/images/"; 
+			[Bindable]
+			private var drawAC:ArrayCollection;
+			
+			private var fr:FileReference;
+			
+			[Bindable]
+			private var saveLabel:String;
+			
+			[Bindable]
+			private var openLabel:String;
+			
+			[Bindable]
+			private var showLabel:String;
+			[Bindable]
+			private var tiLabel:String;
+			
+			[Bindable]
+			private var submitLabel:String;
+			
+			[Embed(source="assets/images/i_about.png")]
+			private var expClass:Class;
+			
+			private var useDefaultFont:Boolean = false;
+			
+			[Bindable]
+			private var numPrecision:int;
+//End My Add
+			
+			private var defaultTool:String;
+			
+			private function init():void
+			{
+				graphicsLayer = new GraphicsLayer();
+				map.addLayer(graphicsLayer);
+				lodgraphicsLayer=new GraphicsLayer();
+				map.addLayer(lodgraphicsLayer);
+				eDrawAL=new ArrayList();
+				servletcontext = this.configData.configXML.servletcontext;
+				if (configXML)
+				{
+					if (GeometryServiceSingleton.instance.url) // using GeometryServiceSingleton
+					{
+						geometryService.url = GeometryServiceSingleton.instance.url;
+						geometryService.token = GeometryServiceSingleton.instance.token;
+						geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
+					}
+					else if (configXML.geometryservice.length() > 0) // look in widget's config if not using GeometryServiceSingleton
+					{
+						geometryService.url = configXML.geometryservice;
+					}
+					
+					graphicsLayer.name = configXML.layername || widgetTitle;
+					
+					// drawing labels
+					textLabel = configXML.labels.textlabel || getDefaultString("textLabel");
+					textColorLabel = configXML.labels.textcolorlabel || getDefaultString("textColorLabel");
+					textFontLabel = configXML.labels.textfontlabel || getDefaultString("textFontLabel");
+					textSizeLabel = configXML.labels.sizelabel || getDefaultString("textSizeLabel");
+					textBoldLabel = configXML.labels.textboldlabel || getDefaultString("textBoldLabel");
+					textBoldTooltip = configXML.labels.textboldtooltip || getDefaultString("textBoldTooltip");
+					textItalicLabel = configXML.labels.textitaliclabel || getDefaultString("textItalicLabel");
+					textItalicTooltip = configXML.labels.textitalictooltip || getDefaultString("textItalicTooltip");
+					textUnderlineLabel = configXML.labels.textunderlinelabel || getDefaultString("textUnderlineLabel");
+					textUnderlineTooltip = configXML.labels.textunderlinetooltip || getDefaultString("textUnderlineTooltip");
+//My Add
+					textRotateLabel = configXML.labels.textrotationlabel || "旋转";
+					WIDGET_URL = config.substring(0,config.lastIndexOf("/")) + "/assets/images/";
+//End My Add
+					
+					// points
+					drawPointLabel = configXML.labels.drawpointlabel || getDefaultString("drawPointLabel");
+					addTextLabel = configXML.labels.addtextlabel || getDefaultString("addTextLabel");
+					markerColorLabel = configXML.labels.markercolorlabel || getDefaultString("markerColorLabel");
+					markerAlphaLabel = configXML.labels.markeralphalabel || getDefaultString("markerAlphaLabel");
+					markerSizeLabel = configXML.labels.markersizelabel || getDefaultString("markerSizeLabel");
+					markerStyleLabel = configXML.labels.markerstylelabel || getDefaultString("markerStyleLabel");
+					markerOutlineColorLabel = configXML.labels.markeroutlinecolorlabel || getDefaultString("markerOutlineColorLabel");
+					markerOutlineWidthLabel = configXML.labels.markeroutlinewidthlabel || getDefaultString("markerOutlineWidthLabel");
+//My Add
+					markerRotationLabel = configXML.labels.markerrotationlabel || "Angle";
+//End My Add
+					
+					// lines
+					drawLineLabel = configXML.labels.drawlinelabel || getDefaultString("drawLineLabel");
+					drawFreehandLineLabel = configXML.labels.drawfreehandlinelabel || getDefaultString("drawFreehandLineLabel");
+					lineAlphaLabel = configXML.labels.linealphalabel || getDefaultString("lineAlphaLabel");
+					lineColorLabel = configXML.labels.linecolorlabel || getDefaultString("lineColorLabel");
+					lineStyleLabel = configXML.labels.linestylelabel || getDefaultString("lineStyleLabel");
+					lineWidthLabel = configXML.labels.linewidthlabel || getDefaultString("lineWidthLabel");
+					
+					// polygons
+					drawPolygonLabel = configXML.labels.drawpolygonlabel || getDefaultString("drawPolygonLabel");
+					drawFreehandPolygonLabel = configXML.labels.drawfreehandpolygonlabel || getDefaultString("drawFreehandPolygonLabel");
+					drawRectangleLabel = configXML.labels.drawrectanglelabel || getDefaultString("drawRectangleLabel");
+					drawCircleLabel = configXML.labels.drawcirclelabel || getDefaultString("drawCircleLabel");
+					drawEllipseLabel = configXML.labels.drawellipselabel || getDefaultString("drawEllipseLabel");
+					fillAlphaLabel = configXML.labels.fillalphalabel || getDefaultString("fillAlphaLabel");
+					fillColorLabel = configXML.labels.fillcolorlabel || getDefaultString("fillColorLabel");
+					fillStyleLabel = configXML.labels.fillstylelabel || getDefaultString("fillStyleLabel");
+					fillOutlineColorLabel = configXML.labels.filloutlinecolorlabel || getDefaultString("fillOutlineColorLabel");
+					fillOutlineWidthLabel = configXML.labels.filloutlinewidthlabel || getDefaultString("fillOutlineWidthLabel");
+					fillOutlineAlphaLabel = configXML.labels.filloutlinealphalabel || getDefaultString("fillAlphaLabel");
+					
+					clearLabel = configXML.labels.clearlabel || getDefaultString("drawClearLabel");
+					clearFeatureLabel = configXML.labels.clearfeaturelabel || getDefaultString("clearLabel");
+					
+					defaultTool = configXML.defaulttool;
+					
+					// measurement labels
+					showmeasurementsLabel = configXML.labels.showmeasurementslabel || getDefaultString("showMeasurementsLabel");
+					distanceUnitsLabel = configXML.labels.distanceunitslabel || getDefaultString("distanceUnitsLabel");
+					areaUnitsLabel = configXML.labels.areaunitslabel || getDefaultString("areaUnitsLabel");
+					areaLabel = configXML.labels.arealabel || getDefaultString("areaLabel");
+					perimeterLabel = configXML.labels.perimeterlabel || getDefaultString("perimeterLabel");
+					lengthLabel = configXML.labels.lengthlabel || getDefaultString("lengthLabel");
+//My Add
+					pointsUnitsLabel = configXML.labels.pointunitslabel || "Point Units";
+
+					//Custom
+					saveLabel = configXML.labels.savelabel || "Save Graphics Layer";
+					openLabel = configXML.labels.openlabel || "Open Saved Graphics Layer";
+					showLabel = configXML.labels.showlabel || "Show   Graphicslist";
+					tiLabel = configXML.labeles.tilable || "标题";
+					submitLabel = configXML.labels.submitlabel || "保存标绘";
+					numPrecision = configXML.numericlabelprecision || 2;
+//End My Add
+					
+					var distanceList:XMLList = configXML..distanceunit;
+					if (distanceList.length() > 0)
+					{
+						var dName:String;
+						var dAbbr:String;
+						var dConversion:Number;
+						
+						configDistance = new ArrayList();
+						for (var i:int = 0; i < distanceList.length(); i++)
+						{
+							if (distanceList[i].@id[0])
+							{
+								const distanceListId:String = distanceList[i].@id;
+								switch (distanceListId)
+								{
+									case "ft":
+									{
+										dName = getDefaultString("unitsFeet");
+										dAbbr = getDefaultString('unitsFeetAbbr');
+										dConversion = 3.2808;
+										break;
+									}
+									case "km":
+									{
+										dName = getDefaultString("unitsKilometers");
+										dAbbr = getDefaultString("unitsKilometersAbbr");
+										dConversion = 0.001;
+										break;
+									}
+									case "m":
+									{
+										dName = getDefaultString("unitsMeters");
+										dAbbr = getDefaultString("unitsMetersAbbr");
+										dConversion = 1;
+										break;
+									}
+									case "mi":
+									{
+										dName = getDefaultString("unitsMiles");
+										dAbbr = getDefaultString("unitsMilesAbbr");
+										dConversion = 0.000621;
+										break;
+									}
+									case "yd":
+									{
+										dName = getDefaultString('unitsYards');
+										dAbbr = getDefaultString('unitsYardsAbbr');
+										dConversion = 1.0936133;
+										break;
+									}
+								}
+							}
+							else
+							{
+								dName = distanceList[i];
+								dAbbr = distanceList[i].@abbr;
+								dConversion = Number(distanceList[i].@conversion);
+							}
+							var dUnit:Object = {
+								name: dName,
+								abbr: dAbbr,
+								conversion: dConversion
+							};
+							configDistance.addItem(dUnit);
+						}
+						cboDistance.dataProvider = configDistance;
+					}
+					
+					// area units
+					var areaList:XMLList = configXML..areaunit;
+					if (areaList.length() > 0)
+					{
+						var aName:String;
+						var aAbbr:String;
+						var aConversion:Number;
+						
+						configArea = new ArrayList();
+						for (var j:int = 0; j < areaList.length(); j++)
+						{
+							if (areaList[j].@id[0])
+							{
+								const areaListId:String = areaList[j].@id;
+								switch (areaListId)
+								{
+									case "ac":
+									{
+										aName = getDefaultString("unitsAcres");
+										aAbbr = getDefaultString("unitsAcresAbbr");
+										aConversion = 0.00024710538147;
+										break;
+									}
+									case "ha":
+									{
+										aName = getDefaultString("unitsHectares");
+										aAbbr = getDefaultString("unitsHectaresAbbr");
+										aConversion = 0.0001;
+										break;
+									}
+									case "sq ft":
+									{
+										aName = getDefaultString("unitsSquareFeet");
+										aAbbr = getDefaultString("unitsSquareFeetAbbr");
+										aConversion = 10.763910417;
+										break;
+									}
+									case "sq km":
+									{
+										aName = getDefaultString("unitsSquareKilometers");
+										aAbbr = getDefaultString("unitsSquareKilometersAbbr");
+										aConversion = 0.000001;
+										break;
+									}
+									case "sq m":
+									{
+										aName = getDefaultString("unitsSquareMeters");
+										aAbbr = getDefaultString("unitsSquareMetersAbbr");
+										aConversion = 1;
+										break;
+									}
+									case "sq mi":
+									{
+										aName = getDefaultString("unitsSquareMiles");
+										aAbbr = getDefaultString("unitsSquareMilesAbbr");
+										aConversion = 0.0000003861021;
+										break;
+									}
+									case "sq yd":
+									{
+										aName = getDefaultString("unitsSquareYards");
+										aAbbr = getDefaultString("unitsSquareYardsAbbr");
+										aConversion = 1.19599005;
+										break;
+									}
+								}
+							}
+							else
+							{
+								aName = areaList[j];
+								aAbbr = areaList[j].@abbr;
+								aConversion = Number(areaList[j].@conversion);
+							}
+							var aUnit:Object = {
+								name: aName,
+								abbr: aAbbr,
+								conversion: aConversion
+							};
+							configArea.addItem(aUnit);
+						}
+						cboArea.dataProvider = configArea;
+					}
+//My Add
+					var pointList:XMLList = configXML..pointunit;
+					configPoint = new ArrayList();
+					for (i = 0; i < pointList.length(); i++)
+					{
+						var pLabel:String = pointList[i];
+						var pAbbr:String = pointList[i].@abbr;
+						var pWKID:Number = Number(pointList[i].@wkid);
+						var pUnit:Object = 
+							{
+								label: pLabel,
+								abbr: pAbbr,
+								wkid: pWKID
+							}
+						configPoint.addItem(pUnit);
+					}
+					cboPoint.dataProvider = configPoint;
+//End My Add
+				}
+				AppEvent.addListener(AppEvent.DATA_PUBLISH, sharedDataUpdated);
+				
+				if(defaultTool)
+					activateDefaultDrawTool(defaultTool);
+				
+//My Add
+				wTemplate.addTitlebarButton(ICON_URL + "i_save.png", saveLabel, saveGraLay,false);
+				wTemplate.addTitlebarButton(ICON_URL + "i_draw.png", openLabel, loadGraLay,false);
+				wTemplate.addTitlebarButton(ICON_URL + "i_table.png", showLabel, loadlist,false);
+				drawAC = new ArrayCollection();
+//End My Add
+			}
+			
+			private function sharedDataUpdated(event:AppEvent):void
+			{
+				var data:Object = event.data;
+				
+				if (data.key == "Deactivate_DrawTool")
+				{
+					setMapAction(null, null, null, null);
+					editTool.deactivate();
+					if (selectedDrawingIcon)
+					{
+						selectedDrawingIcon.filters = [];
+						selectedDrawingIcon = null;
+					}
+				}
+			}
+			
+			private function activateDefaultDrawTool(drawTool:String):void
+			{
+				addSharedData("Deactivate_DrawTool", null); // to be able to deactivate drawTool on other widgets
+				editTool.deactivate();
+				lastActiveEditType = "none";
+				var img:Image;
+				for (var ele:int = 0; ele<drawImageGroup.numElements; ele++){
+					img = drawImageGroup.getElementAt(ele) as Image;
+					if (img.name == drawTool)
+						break;
+				}
+				
+				// apply glow
+				selectedDrawingIcon = img;
+				clearSelectionFilter();
+				selectedDrawingIcon.filters = [ glowFilter ];
+//My Add	
+				finishDrawing = showMeasurements = isEditing = false;
+//End My Add
+				
+				switch (drawTool)
+				{
+					case DrawTool.MAPPOINT:
+					{
+						drawingPolygon = drawingLine = false;
+						addingText = selectedDrawingIcon.id == "text";
+						drawingPoint = !addingText;
+						 PointXY = true;
+						drawMode = addingText ? TEXT_MODE : null;
+						drawStatus = (drawMode == TEXT_MODE) ? addTextLabel : drawPointLabel;
+						setMapAction(DrawTool.MAPPOINT, drawStatus, null, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.POLYLINE:
+					{
+						drawingPoint = addingText = drawingPolygon = PointXY = false;
+						drawingLine = true;
+						drawStatus = drawLineLabel;
+						setMapAction(DrawTool.POLYLINE, drawStatus, lineSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.FREEHAND_POLYLINE:
+					{
+						drawingPoint = addingText = drawingPolygon = PointXY = false;
+						drawingLine =  true;
+						drawStatus = drawFreehandLineLabel;
+						setMapAction(DrawTool.FREEHAND_POLYLINE, drawStatus, lineSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.EXTENT:
+					{
+						addingText = drawingPoint = drawingLine = PointXY = false;
+						drawingPolygon =  true;
+						drawStatus = drawRectangleLabel;
+						setMapAction(DrawTool.EXTENT, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.CIRCLE:
+					{
+						addingText = drawingPoint = drawingLine = PointXY = false;
+						drawingPolygon =  true;
+						drawStatus = drawCircleLabel;
+						setMapAction(DrawTool.CIRCLE, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.ELLIPSE:
+					{
+						addingText = drawingPoint = drawingLine = PointXY = false;
+						drawingPolygon = true;
+						drawStatus = drawEllipseLabel;
+						setMapAction(DrawTool.ELLIPSE, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.POLYGON:
+					{
+						addingText = drawingPoint = drawingLine = PointXY = false;
+						drawingPolygon =  true;
+						drawStatus = drawPolygonLabel;
+						setMapAction(DrawTool.POLYGON, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.FREEHAND_POLYGON:
+					{
+						addingText = drawingPoint = drawingLine = PointXY = false;
+						drawingPolygon =  true;
+						drawStatus = drawFreehandPolygonLabel;
+						setMapAction(DrawTool.FREEHAND_POLYGON, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+				}
+			}
+			
+			private function activateDrawTool(event:MouseEvent):void
+			{
+				addSharedData("Deactivate_DrawTool", null); // to be able to deactivate drawTool on other widgets
+				editTool.deactivate();
+				lastActiveEditType = "none";
+				
+//My Add	
+				finishDrawing = false;
+//End My Add
+				
+				// apply glow
+				selectedDrawingIcon = Image(event.currentTarget);
+				clearSelectionFilter();
+				selectedDrawingIcon.filters = [ glowFilter ];
+				
+				showMeasurements = false;
+				isEditing = false;
+				drawType = selectedDrawingIcon.name;
+				switch (drawType)
+				{
+					case DrawTool.MAPPOINT:
+					{
+						drawingPolygon = drawingLine = false;
+						addingText = selectedDrawingIcon.id == "text";
+						 drawingPoint = !addingText;
+//My Add
+						PointXY = true;
+//End My Add
+						drawMode = addingText ? TEXT_MODE : null;
+						drawStatus = (drawMode == TEXT_MODE) ? addTextLabel : drawPointLabel;
+						setMapAction(drawType, drawStatus, null, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.POLYLINE:
+					{
+						drawingPoint = addingText = drawingPolygon = PointXY = false;
+						drawingLine = true;
+						drawStatus = drawLineLabel;
+						setMapAction(drawType, drawStatus, lineSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.FREEHAND_POLYLINE:
+					{
+						drawingPoint = addingText = drawingPolygon = PointXY = false;
+						drawingLine =  true;
+						drawStatus = drawFreehandLineLabel;
+						setMapAction(drawType, drawStatus, lineSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.EXTENT:
+					{
+						addingText = drawingPoint = drawingLine = PointXY = false;
+						drawingPolygon =  true;
+						drawStatus = drawRectangleLabel;
+						setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.CIRCLE:
+					{
+						addingText = drawingPoint = drawingLine = PointXY = false;
+						drawingPolygon =  true;
+						drawStatus = drawCircleLabel;
+						setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.ELLIPSE:
+					{
+						addingText = drawingPoint = drawingLine = PointXY = false;
+						drawingPolygon =  true;
+						drawStatus = drawEllipseLabel;
+						setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.POLYGON:
+					{
+						addingText = drawingPoint = drawingLine = PointXY = false;
+						drawingPolygon =  true;
+						drawStatus = drawPolygonLabel;
+						setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.FREEHAND_POLYGON:
+					{
+						addingText = drawingPoint = drawingLine = PointXY = false;
+						drawingPolygon =  true;
+						drawStatus = drawFreehandPolygonLabel;
+						setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+				}
+			}
+			
+			private function clear():void
+			{
+				graphicsLayer.clear();
+				lodgraphicsLayer.clear();
+				editTool.deactivate();
+			}
+			
+			private function clearSelectionFilter():void
+			{
+				for (var i:int = 0; i < drawImageGroup.numChildren; i++)
+				{
+					if (drawImageGroup.getChildAt(i).filters && drawImageGroup.getChildAt(i).filters.length > 0)
+					{
+						if (!(selectedDrawingIcon && drawImageGroup.getChildAt(i) === selectedDrawingIcon))
+						{
+							drawImageGroup.getChildAt(i).filters = [];
+						}
+					}
+				}
+			}
+			
+			private function getMeasurementGraphic(graphic:Graphic):Graphic
+			{
+				var result:Graphic;
+				for (var i:int = 0; i < graphicsLayer.numGraphics; )
+				{
+					if (Graphic(graphicsLayer.getChildAt(i)).name == graphic.id)
+					{
+						result = Graphic(graphicsLayer.getChildAt(i));
+						break;
+					}
+					else
+					{
+						i++;
+					}
+				}
+				return result;
+			}
+			
+			private function map_drawEndHandler(event:DrawEvent):void
+			{
+//My Add
+				finishDrawing = true;
+//End My Add
+				selectedDrawingIcon = null;
+				clearSelectionFilter();
+				event.target.deactivate();
+				
+				lastDrawnGraphic = event.graphic;
+				lastDrawnGraphic.geometry.spatialReference = map.spatialReference;
+				lastDrawnGraphic.autoMoveToTop = false;
+				
+				var customContextMenu:ContextMenu = new ContextMenu();
+				customContextMenu.hideBuiltInItems();
+				var menuItem:ContextMenuItem = new ContextMenuItem(clearFeatureLabel);
+				menuItem.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, menuItem_contextMenuDeleteHandler);
+				customContextMenu.customItems.push(menuItem);
+				lastDrawnGraphic.contextMenu = customContextMenu;
+				
+				lastDrawnGraphic.addEventListener(MouseEvent.CLICK, graphic_clickHandler);
+				lastDrawnGraphic.attributes = {labeled: chkMeasurements.selected, wkid: map.spatialReference.wkid};
+				graphicsLayer.add(lastDrawnGraphic);
+				
+				var geom:Geometry = lastDrawnGraphic.geometry;
+				switch (geom.type)
+				{
+					case Geometry.MAPPOINT:
+					{
+						if (drawMode == TEXT_MODE)
+						{
+							var textSymbol:TextSymbol = new TextSymbol(txtLabel.text);
+							var txtFormat:TextFormat = new TextFormat(textFont.selectedItem.font, numTextSize.value, cpText.selectedColor, bold.selected, italic.selected, underline.selected);
+							textSymbol.textFormat = txtFormat;
+//My Add
+							textSymbol.angle = numTextRotation.value;
+//End My Add
+							lastDrawnGraphic.symbol = textSymbol;
+						}
+						else
+						{
+//My Change and Add Change is to the angle of the simple marker symbol
+							lastDrawnGraphic.symbol = new SimpleMarkerSymbol(markerStyle.selectedItem.style, numMarkerSize.value, cpMarker.selectedColor, numMarkerAlpha.value, 0, 0, numMarkerAngle.value, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, cpMarkerOutline.selectedColor, 1, numMarkerOutlineWidth.value));
+							lastDrawnGraphic.attributes.wkid = EPSG_GEOGRAPHIC;
+							geometryService.project([geom], new SpatialReference(EPSG_GEOGRAPHIC));
+							updateMeasureLabelPosition(geom);
+//End My Add
+						}
+						break;
+					}
+					case Geometry.POLYLINE:
+					{
+//My Change
+						lastDrawnGraphic.symbol = new SimpleLineSymbol(lineStyle.selectedItem.style, cpLine.selectedColor, numLineAlpha.value, numLineWidth.value);
+						updateMeasureLabelPosition(geom);
+						measureGeometry(geom);
+						break;
+//End My Change
+					}
+					case Geometry.POLYGON:
+					{
+//My Change
+						lastDrawnGraphic.symbol = new SimpleFillSymbol(fillStyle.selectedItem.style, cpFill.selectedColor, numFillAlpha.value, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, cpFillOutline.selectedColor, numFillOutlineAlpha.value, numFillOutlineWidth.value));
+
+							var polygon:Polygon = geom as Polygon;
+							if (GeometryUtil.polygonSelfIntersecting(polygon))
+							{
+								geometryService.simplify([ polygon ]);
+							}
+							else
+							{
+								updateMeasureLabelPosition(geom);
+								measureGeometry(geom);
+							}
+//End My Change
+						break;
+					}
+					case Geometry.EXTENT:
+					{
+						lastDrawnGraphic.symbol = new SimpleFillSymbol(fillStyle.selectedItem.style, cpFill.selectedColor, numFillAlpha.value, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, cpFillOutline.selectedColor, numFillOutlineAlpha.value, numFillOutlineWidth.value));
+//My Change
+
+							updateMeasureLabelPosition(geom);
+							// convert it to a polygon before project for more accururate result
+							measureGeometry((geom as Extent).toPolygon());
+//End My Change
+						break;
+					}
+				}
+			}
+			
+			private function menuItem_contextMenuDeleteHandler(event:ContextMenuEvent):void
+			{
+				graphicsLayer.remove(Graphic(event.contextMenuOwner));
+				// also remove measurement label if any
+				graphicsLayer.remove(getMeasurementGraphic(Graphic(event.contextMenuOwner)));
+				editTool.deactivate();
+			}
+			
+			private function drawIcon_rollOverHandler(event:MouseEvent):void
+			{
+				clearSelectionFilter();
+				event.target.filters = [ glowFilter ];
+			}
+			
+			private function drawIcon_rollOutHandler(event:MouseEvent):void
+			{
+				clearSelectionFilter();
+			}
+			
+			private function graphic_clickHandler(event:MouseEvent):void
+			{
+				if (editGraphic !== Graphic(event.currentTarget))
+				{
+					editGraphic = Graphic(event.currentTarget);
+					lastActiveEditType = "none"; // make sure move and edit vertices is the 1st mode
+				}
+				if (editGraphic.geometry is Polyline || editGraphic.geometry is Polygon)
+				{
+					if (lastActiveEditType == "none")
+					{
+						isEditing = true;
+						lastActiveEditType = "moveEditVertices";
+						editTool.activate(EditTool.MOVE | EditTool.EDIT_VERTICES, [ editGraphic ]);
+					}
+					else if (lastActiveEditType == "moveEditVertices")
+					{
+						isEditing = true;
+						lastActiveEditType = "moveRotateScale";
+						editTool.activate(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, [ editGraphic ]);
+					}
+					else if (lastActiveEditType == "moveRotateScale")
+					{
+						isEditing = false;
+						editGraphic = null;
+						lastActiveEditType = "none";
+						editTool.deactivate();
+					}
+				}
+				else if (editGraphic.geometry is Extent)
+				{
+					if (lastActiveEditType == "none")
+					{
+						isEditing = true;
+						lastActiveEditType = "moveScale";
+						editTool.activate(EditTool.MOVE | EditTool.SCALE, [ editGraphic ]);
+					}
+					else
+					{
+						isEditing = false;
+						editGraphic = null;
+						lastActiveEditType = "none";
+						editTool.deactivate();
+					}
+				}
+				else
+				{
+					if (lastActiveEditType == "none")
+					{
+						isEditing = true;
+						lastActiveEditType = "moveEditVertices";
+						editTool.activate(EditTool.EDIT_VERTICES | EditTool.MOVE, [ editGraphic ]);
+					}
+					else
+					{
+						isEditing = false;
+						editGraphic = null;
+						lastActiveEditType = "none";
+						editTool.deactivate();
+					}
+				}
+				measurementLabelShown = false;
+				if (editGraphic && getMeasurementGraphic(editGraphic))
+				{
+					measurementLabelShown = true;
+				}
+				
+				removeEditToolEventListeners();
+				map.removeEventListener(MouseEvent.MOUSE_DOWN, map_mouseDownHandler);
+				
+				if (editGraphic)
+				{
+					addEditToolEventListeners();
+					map.addEventListener(MouseEvent.MOUSE_DOWN, map_mouseDownHandler);
+				}
+			}
+			
+			private function removeEditToolEventListeners():void
+			{
+				editTool.removeEventListener(EditEvent.GHOST_VERTEX_MOUSE_DOWN, hideMeasureLabel);
+				editTool.removeEventListener(EditEvent.CONTEXT_MENU_SELECT, hideMeasureLabel);
+				editTool.removeEventListener(EditEvent.VERTEX_MOVE_START, hideMeasureLabel);
+				
+				editTool.removeEventListener(EditEvent.GRAPHICS_MOVE_START, hideMeasureLabel);
+				editTool.removeEventListener(EditEvent.GRAPHIC_ROTATE_START, hideMeasureLabel);
+				editTool.removeEventListener(EditEvent.GRAPHIC_SCALE_START, hideMeasureLabel);
+				
+				editTool.removeEventListener(EditEvent.VERTEX_ADD, editTool_vertexAddDeleteHandler);
+				editTool.removeEventListener(EditEvent.VERTEX_DELETE, editTool_vertexAddDeleteHandler);
+				editTool.removeEventListener(EditEvent.VERTEX_MOVE_STOP, editTool_vertexMoveStopHandler);
+				
+				editTool.removeEventListener(EditEvent.GRAPHICS_MOVE_STOP, editTool_graphicsMoveStopHandler);
+				editTool.removeEventListener(EditEvent.GRAPHIC_ROTATE_STOP, editTool_graphicRotateStopHandler);
+				editTool.removeEventListener(EditEvent.GRAPHIC_SCALE_STOP, editTool_graphicScaleStopHandler);
+			}
+			
+			private function map_mouseDownHandler(event:MouseEvent):void
+			{
+				map.removeEventListener(MouseEvent.MOUSE_DOWN, map_mouseDownHandler);
+				map.addEventListener(MouseEvent.MOUSE_UP, map_mouseUpHandler);
+				map.addEventListener(MouseEvent.MOUSE_MOVE, map_mouseMoveHandler);
+			}
+			
+			private function map_mouseUpHandler(event:MouseEvent):void
+			{
+				if (event.target !== editGraphic)
+				{
+					map.removeEventListener(MouseEvent.MOUSE_UP, map_mouseUpHandler);
+					map.removeEventListener(MouseEvent.MOUSE_MOVE, map_mouseMoveHandler);
+					
+					isEditing = false;
+					editGraphic = null;
+					lastActiveEditType = "none";
+					editTool.deactivate();
+				}
+			}
+			
+			private function map_mouseMoveHandler(event:MouseEvent):void
+			{
+				map.addEventListener(MouseEvent.MOUSE_DOWN, map_mouseDownHandler);
+				map.removeEventListener(MouseEvent.MOUSE_UP, map_mouseUpHandler);
+				map.removeEventListener(MouseEvent.MOUSE_MOVE, map_mouseMoveHandler);
+			}
+			
+			private function addEditToolEventListeners():void
+			{
+				editTool.addEventListener(EditEvent.GHOST_VERTEX_MOUSE_DOWN, hideMeasureLabel);
+				editTool.addEventListener(EditEvent.CONTEXT_MENU_SELECT, hideMeasureLabel);
+				editTool.addEventListener(EditEvent.VERTEX_MOVE_START, hideMeasureLabel);
+				
+				editTool.addEventListener(EditEvent.GRAPHICS_MOVE_START, hideMeasureLabel);
+				editTool.addEventListener(EditEvent.GRAPHIC_ROTATE_START, hideMeasureLabel);
+				editTool.addEventListener(EditEvent.GRAPHIC_SCALE_START, hideMeasureLabel);
+				
+				editTool.addEventListener(EditEvent.VERTEX_ADD, editTool_vertexAddDeleteHandler);
+				editTool.addEventListener(EditEvent.VERTEX_DELETE, editTool_vertexAddDeleteHandler);
+				editTool.addEventListener(EditEvent.VERTEX_MOVE_STOP, editTool_vertexMoveStopHandler);
+				
+				editTool.addEventListener(EditEvent.GRAPHICS_MOVE_STOP, editTool_graphicsMoveStopHandler);
+				editTool.addEventListener(EditEvent.GRAPHIC_ROTATE_STOP, editTool_graphicRotateStopHandler);
+				editTool.addEventListener(EditEvent.GRAPHIC_SCALE_STOP, editTool_graphicScaleStopHandler);
+			}
+			
+			private function hideMeasureLabel(event:EditEvent):void
+			{
+				if (measurementLabelShown)
+				{
+					getMeasurementGraphic(editGraphic).visible = false;
+				}
+			}
+			
+			private function editTool_vertexAddDeleteHandler(event:EditEvent):void
+			{
+				if (map.wrapAround180)
+				{
+					normalizeGraphicGeometry(event.graphic);
+				}
+				else if (measurementLabelShown)
+				{
+					recalculate(event.graphic);
+				}
+			}
+			
+			private function editTool_vertexMoveStopHandler(event:EditEvent):void
+			{
+				if (map.wrapAround180)
+				{
+					normalizeGraphicGeometry(event.graphic);
+				}
+				else if (measurementLabelShown)
+				{
+					recalculate(event.graphic);
+				}
+			}
+			
+			private function editTool_graphicsMoveStopHandler(event:EditEvent):void
+			{
+				if (map.wrapAround180)
+				{
+					normalizeGraphicGeometry(event.graphics[0]);
+				}
+				else if (measurementLabelShown)
+				{
+					recalculate(event.graphics[0]);
+				}
+			}
+			
+			private function editTool_graphicRotateStopHandler(event:EditEvent):void
+			{
+				if (map.wrapAround180)
+				{
+					normalizeGraphicGeometry(event.graphic);
+				}
+				else if (measurementLabelShown)
+				{
+					recalculate(event.graphic);
+				}
+			}
+			
+			private function editTool_graphicScaleStopHandler(event:EditEvent):void
+			{
+				if (map.wrapAround180)
+				{
+					normalizeGraphicGeometry(event.graphic);
+				}
+				else if (measurementLabelShown)
+				{
+					recalculate(event.graphic);
+				}
+			}
+			
+			private function normalizeGraphicGeometry(graphic:Graphic):void
+			{
+				// normalize
+				GeometryUtil.normalizeCentralMeridian([ graphic.geometry ], GeometryServiceSingleton.instance, new AsyncResponder(getNormalizedGeometryFunction, faultFunction));
+				function getNormalizedGeometryFunction(item:Object, token:Object = null):void
+				{
+					var normalizedGeometries:Array = item as Array;
+					graphic.geometry = normalizedGeometries[0];
+					isEditing = true;
+					if (graphic.geometry is Polyline || graphic.geometry is Polygon)
+					{
+						if (lastActiveEditType == "moveEditVertices")
+						{
+							editTool.activate(EditTool.MOVE | EditTool.EDIT_VERTICES, [ graphic ]);
+						}
+						else if (lastActiveEditType == "moveRotateScale")
+						{
+							editTool.activate(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, [ graphic ]);
+						}
+					}
+					else if (graphic.geometry is Extent)
+					{
+						if (lastActiveEditType == "moveScale")
+						{
+							editTool.activate(EditTool.MOVE | EditTool.SCALE, [ graphic ]);
+						}
+					}
+					else
+					{
+						if (lastActiveEditType == "moveEditVertices")
+						{
+							editTool.activate(EditTool.EDIT_VERTICES | EditTool.MOVE, [ graphic ]);
+						}
+					}
+					if (measurementLabelShown)
+					{
+						recalculate(graphic);
+					}
+				}
+				function faultFunction(fault:Fault, token:Object = null):void
+				{
+					dispatchEvent(new FaultEvent(FaultEvent.FAULT, false, false, fault));
+				}
+			}
+			
+			private function recalculate(graphic:Graphic):void
+			{
+				var geom:Geometry = graphic.geometry;
+				updateMeasureLabelPosition(geom);
+				measureGeometry(geom);
+			}
+			
+			private function measureGeometry(geom:Geometry):void
+			{
+				if(geom.type == Geometry.MAPPOINT && lastDrawnGraphic.attributes.wkid != map.spatialReference.wkid){
+					geometryService.project([geom], new SpatialReference(lastDrawnGraphic.attributes.wkid));
+					return;
+				}
+				var wkid:Number = geom.spatialReference.wkid;
+				if ((wkid == EPSG_GEOGRAPHIC) || (isWebMercator(wkid)))
+				{
+					calculateAreasAndLengths(geom);
+				}
+				else
+				{
+					var geographicSpatialReference:SpatialReference = new SpatialReference(EPSG_GEOGRAPHIC);
+					geometryService.project([ geom ], geographicSpatialReference);
+				}
+			}
+			
+			private function updateMeasureLabelPosition(geom:Geometry):void
+			{
+				switch (geom.type)
+				{
+					case Geometry.MAPPOINT:
+					{
+						measurePt = geom as MapPoint;
+						break;
+					} 
+					case Geometry.POLYLINE:
+					{
+						var polyline:Polyline = geom as Polyline;
+						var polylineExtent:Extent;
+						if (polyline.paths.length == 1)
+						{
+							polylineExtent = polyline.extent;
+						}
+						else
+						{
+							// Multiple paths, hence show the measurement label at the center of first path
+							var tempPolyline:Polyline = new Polyline;
+							tempPolyline.paths = [ polyline.paths[0]];
+							polylineExtent = tempPolyline.extent;
+						}
+						measurePt = polylineExtent.center;
+						break;
+					}
+					case Geometry.POLYGON:
+					{
+						var polygon:Polygon = geom as Polygon;
+						var polygonExtent:Extent;
+						if (polygon.rings.length == 1)
+						{
+							polygonExtent = polygon.extent;
+						}
+						else
+						{
+							// Multiple rings, hence show the measurement label at the center of first ring
+							var tempPolygon:Polygon = new Polygon;
+							tempPolygon.rings = [ polygon.rings[0]];
+							polygonExtent = tempPolygon.extent;
+						}
+						measurePt = polygonExtent.center;
+						break;
+					}
+					case Geometry.EXTENT:
+					{
+						measurePt = geom.extent.center;
+						break;
+					}
+				}
+			}
+			
+			private function geometryService_projectCompleteHandler(event:GeometryServiceEvent):void
+			{
+				var geom:Geometry = (event.result as Array)[0];
+//				calculateAreasAndLengths(geom);
+			}
+			
+//My Add
+			private function deg_to_dms ( degfloat:Number ):String
+			{
+				//Input must be non-negative:
+				if (degfloat < 0)
+					return "error";
+				
+				//Compute degrees, minutes and seconds:
+				var deg:int = int(degfloat);
+				var minfloat:Number = 60 * ( degfloat - deg );
+				var min:int = int( minfloat );
+				var secfloat:Number = 60 * ( minfloat - min );
+				
+				var rString:String = "";
+				rString = deg + "º" + min + "'" + secfloat.toFixed(4) + "''";
+				return rString;
+			}
+//End My Add
+			
+			private function calculateAreasAndLengths(geom:Geometry):void
+			{
+				switch (geom.type){
+//My Add
+					case Geometry.MAPPOINT:{
+						var pointLabel:String;
+						var pPnt:MapPoint = geom as MapPoint;
+//						if (cboPoint.selectedItem.abbr == "wgs84dms"){
+//							if (chkMeasurements.selected){
+//								addDrawLabel(deg_to_dms(Math.abs(pPnt.x)) + ", " + deg_to_dms(Math.abs(pPnt.y)), lastDrawnGraphic, editGraphic, isEditing);
+//							}
+//							pointLabel = "X: " + deg_to_dms(Math.abs(pPnt.x)) + ", Y: " + deg_to_dms(Math.abs(pPnt.y));
+//						}else{
+//							if (chkMeasurements.selected){
+//								addDrawLabel(numFormatter.format(pPnt.x) + ", " + numFormatter.format(pPnt.y), lastDrawnGraphic, editGraphic, isEditing);
+//							}
+//							pointLabel = "X: " + numFormatter2.format(pPnt.x) + ", Y: " + numFormatter2.format(pPnt.y);
+//						}
+						var cMenu:ContextMenu = lastDrawnGraphic.contextMenu;
+						cMenu.hideBuiltInItems();
+						if(cMenu.customItems.length == 1){
+							var menuItem2:ContextMenuItem = new ContextMenuItem(pointLabel);
+							cMenu.customItems.push(menuItem2);
+							lastDrawnGraphic.contextMenu = cMenu;
+						}else if(cMenu.customItems.length == 2){
+							var menuItem3:ContextMenuItem = cMenu.customItems[1];
+							menuItem3.caption = pointLabel;
+							lastDrawnGraphic.contextMenu = cMenu;
+						}
+						break;
+					}
+//End My Add
+					case Geometry.POLYLINE:
+					{
+						var polyline:Polyline = Polyline(geom);
+//						calculatePolylineLengths(polyline);
+						break;
+					}
+					case Geometry.POLYGON:
+					{
+						var polygon:Polygon = Polygon(geom);
+//						calculatePolygonAreasAndLengths(polygon);
+						break;
+					}
+					case Geometry.EXTENT:
+					{
+						var extent:Extent = Extent(geom);
+//						calculatePolygonAreasAndLengths(extent.toPolygon()); //convert it to polygon for measurement
+						break;
+					}
+				}
+			}
+			
+			private function isWebMercator(wkid:Number):Boolean
+			{
+				return wkid == 102100 || wkid == 3857 || wkid == 102113;
+			}
+			
+			private function calculatePolylineLengths(polyline:Polyline):void
+			{
+				var polylineToMeasure:Polyline
+				
+				var wkid:Number = polyline.spatialReference.wkid;
+				if (wkid == EPSG_GEOGRAPHIC)
+				{
+					polylineToMeasure = polyline;
+				}
+				else if (isWebMercator(wkid))
+				{
+					polylineToMeasure = WebMercatorUtil.webMercatorToGeographic(polyline) as Polyline;
+				}
+				
+				var lengths:Array = GeometryUtil.geodesicLengths([ polylineToMeasure ], Units.METERS);
+				
+				var abbrDist:String = cboDistance.selectedItem.abbr;
+				var convDist:Number = cboDistance.selectedItem.conversion;
+				var length:Number = lengths[0] * convDist;
+				
+				var label:String = createLengthsLabel(length, abbrDist);
+//				addDrawLabel(label, lastDrawnGraphic, editGraphic, isEditing);
+//My Add
+				var cMenu:ContextMenu = lastDrawnGraphic.contextMenu;
+				cMenu.hideBuiltInItems();
+				if(cMenu.customItems.length == 1){
+					var menuItem2:ContextMenuItem = new ContextMenuItem(lengthLabel + " " +  numFormatter.format(length * convDist) + " " + abbrDist);
+					cMenu.customItems.push(menuItem2);
+					lastDrawnGraphic.contextMenu = cMenu;
+				}
+//End My Add
+			}
+			
+			private function createLengthsLabel(length:Number, lengthAbbrev:String):String
+			{
+				return lengthLabel + " " + numFormatter.format(length) + " " + lengthAbbrev;
+			}
+			
+			private function calculatePolygonAreasAndLengths(polygon:Polygon):void
+			{
+				var polygonToMeasure:Polygon
+				
+				var wkid:Number = polygon.spatialReference.wkid;
+				if (wkid == EPSG_GEOGRAPHIC)
+				{
+					polygonToMeasure = polygon;
+				}
+				else if (isWebMercator(wkid))
+				{
+					polygonToMeasure = WebMercatorUtil.webMercatorToGeographic(polygon) as Polygon;
+				}
+				
+				var lengths:Array = GeometryUtil.geodesicLengths([ new Polyline(polygonToMeasure.rings)], Units.METERS);
+				var areas:Array = GeometryUtil.geodesicAreas([ polygonToMeasure ], Units.SQUARE_METERS);
+				
+				var abbrArea:String = cboArea.selectedItem.abbr;
+				var convArea:Number = cboArea.selectedItem.conversion;
+				var abbrDist:String = cboDistance.selectedItem.abbr;
+				var convDist:Number = cboDistance.selectedItem.conversion;
+				var area:Number = areas[0] * convArea;
+				var length:Number = lengths[0] * convDist;
+				
+				var label:String = createAreasAndLengthsLabel(area, abbrArea, length, abbrDist);
+//				addDrawLabel(label, lastDrawnGraphic, editGraphic, isEditing);
+//My Add
+				var cMenu:ContextMenu = lastDrawnGraphic.contextMenu;
+				cMenu.hideBuiltInItems();
+				if(cMenu.customItems.length>1)
+					cMenu.customItems.splice(1,cMenu.customItems.length);
+				if(cMenu.customItems.length == 1){
+					var menuItem2:ContextMenuItem = new ContextMenuItem(areaLabel + " " + numFormatter.format(area * convArea) + " " + abbrArea);
+					var menuItem3:ContextMenuItem = new ContextMenuItem(perimeterLabel + " " +  numFormatter.format(length * convDist) + " " + abbrDist);
+					cMenu.customItems.push(menuItem2);
+					cMenu.customItems.push(menuItem3);
+					lastDrawnGraphic.contextMenu = cMenu;
+				}
+//End My Add
+			}
+			
+			private function createAreasAndLengthsLabel(area:Number, areaAbbrev:String, length:Number, lengthAbbrev:String):String
+			{
+				return areaLabel + " " + numFormatter.format(area) + " " + areaAbbrev +
+					"\n" + perimeterLabel + " " + numFormatter.format(length) + " " + lengthAbbrev;
+			}
+			
+//			private function addDrawLabel(label:String, lastDrawnGraphic:Graphic, editGraphic:Graphic, isEditing:Boolean):void
+//			{
+//				var txtSym:TextSymbol = new TextSymbol(label);
+//				txtSym.yoffset = 8;
+//				//var txtFormat:TextFormat = new TextFormat("Arial", 12, 0x000000, true); // black label
+////My Add
+//				var labeled:Boolean = false;
+//				var txtFormat:TextFormat = new TextFormat(textFont2.selectedItem.font, numTextSize2.value, cpText2.selectedColor, bold2.selected, italic2.selected, underline2.selected);
+////End My Add
+//				txtSym.textFormat = txtFormat;
+////My Add
+//				txtSym.angle = numTextRotation.value;
+////End My Add
+//				// also remove measurement label if any
+//				var gra:Graphic = new Graphic(measurePt);
+//				if (isEditing){
+////My Add
+//					if(lastDrawnGraphic.attributes.labeled)
+//						labeled = true;
+////End My Add
+//					graphicsLayer.remove(getMeasurementGraphic(editGraphic));
+//					gra.name = editGraphic.id;
+//				}else{
+////My Add
+//					if(lastDrawnGraphic.attributes.labeled)
+//						labeled = true;
+////End My Add
+//					graphicsLayer.remove(getMeasurementGraphic(lastDrawnGraphic));
+//					gra.name = lastDrawnGraphic.id;
+//				}
+////My Add
+//				if(labeled == false)
+//					return;
+////End My Add
+//				gra.autoMoveToTop = false;
+//				gra.symbol = txtSym;
+//				gra.mouseEnabled = false;
+//				gra.mouseChildren = false;
+//				graphicsLayer.add(gra);
+//			}
+			
+			private function geometryService_simplifyCompleteHandler(event:GeometryServiceEvent):void
+			{
+				var polygon:Polygon = event.result[0] as Polygon;
+				lastDrawnGraphic.geometry = polygon; //update to avoid simplifying again
+				
+				updateMeasureLabelPosition(polygon);
+				measureGeometry(polygon);
+			}
+			
+			private function geometryService_faultHandler(info:Object, token:Object = null):void
+			{
+				showError(info.toString());
+			}
+			
+			private function wTemplate_closeHandler(event:Event):void
+			{
+				graphicsLayer.visible = false;
+				lodgraphicsLayer.visible = false;
+				frmDraw.visible = false;
+				
+				setMapAction(null, null, null, null); // deactivate drawTool
+//My Add
+				finishDrawing = true;
+//End My Add
+				if (selectedDrawingIcon)
+				{
+					selectedDrawingIcon.filters = [];
+					selectedDrawingIcon = null;
+				}
+			}
+			
+			private function wTemplate_openHandler(event:Event):void
+			{
+				frmDraw.visible = true;
+				if (graphicsLayer)
+				{ 
+					graphicsLayer.visible = true;
+				}
+				if (lodgraphicsLayer)
+				{ 
+					lodgraphicsLayer.visible = true;
+				}
+			}
+			
+//My Add
+			private function alertClickHandler(event:CloseEvent):void
+			{
+				if (event.detail==Alert.YES){
+					useDefaultFont = true;
+					addGras();
+				}else{
+					useDefaultFont = false;
+					addGras();
+				}
+			}
+			
+			private function saveGraLay():void
+			{
+				this.currentState = "SAVE";
+				wTemplate.selectedTitlebarButtonIndex = 2;
+			}
+			
+			//File types which we want the user to open
+			private static const FILE_TYPES:Array = [new FileFilter("Text File", "*.txt;*.text")];
+			
+			//second File types which we want the user to open
+			private static const FILE_TYPES2:Array = [new FileFilter("CSV File", "*.csv;*.csv")];
+			
+			
+			/************ Browse Event Handlers **************/
+			
+			//called when the user selects a file from the browse dialog
+			private function onFileSelect(e:Event):void
+			{
+				//listen for when the file has loaded
+				fr.addEventListener(Event.COMPLETE, onLoadComplete);
+				
+				//listen for any errors reading the file
+				fr.addEventListener(IOErrorEvent.IO_ERROR, onLoadError);
+				
+				//load the content of the file
+				fr.load();
+			}
+			
+			//called when the user cancels out of the browser dialog
+			private function onCancel(e:Event):void
+			{
+				trace("File Browse Canceled");
+				fr = null;
+			}
+			
+			/************ Select Event Handlers **************/
+			
+			//called when the file has completed loading
+			private function onLoadComplete(e:String):void
+			{
+				//get the data from the file as a ByteArray
+				lodgraphicsLayer.clear();
+				const dobj:Object = com.esri.ags.utils.JSON.decode(e);			
+				//clean up the FileReference instance
+			
+				
+				var i:Number;
+				for (i = 0; i < dobj.length; i++)
+				{
+					var gObj:Object = dobj[i];
+					var gArrObj:Object;
+					var Geom:Geometry;
+					var gArray:Array;
+					var pA:Array;
+					var m:int;
+					var nX:Number;
+					var nY:Number;
+					var gA:Array;
+					var sMP:String;
+					var cMenu:ContextMenu = new ContextMenu();
+					cMenu.hideBuiltInItems();
+					if (gObj.cmenu)
+					{
+						for(var cmi:int = 0; cmi < gObj.cmenu.customItems.length; cmi ++)
+						{
+							if (gObj.cmenu.customItems[cmi].caption != "Clear"){
+								var menuItem2:ContextMenuItem = new ContextMenuItem(gObj.cmenu.customItems[cmi].caption);
+								cMenu.customItems.push(menuItem2);
+							} else {
+								var menuItem:ContextMenuItem = new ContextMenuItem(clearFeatureLabel);
+								menuItem.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, menuItem_contextMenuDeleteHandler);
+								cMenu.customItems.push(menuItem);
+							}
+						}
+					}
+					
+					switch (gObj.geomtype){
+						case "MAPPOINT":
+							gArrObj = gObj.geomarray;
+							nX = gArrObj[0].x;
+							nY = gArrObj[0].y;
+							Geom = new MapPoint(nX,nY,new SpatialReference(gObj.geomsr));
+							break;
+						case "POLYLINE":
+							gArrObj = gObj.geomarray;
+							pA = [];
+							for (m=0; m<gArrObj.length; m++)
+							{
+								nX = gArrObj[m].x;
+								nY = gArrObj[m].y;
+								pA.push(new MapPoint(nX,nY,new SpatialReference(gObj.geomsr)));
+							}
+							var pLine:Polyline = new Polyline(null,new SpatialReference(gObj.geomsr));
+							pLine.addPath(pA);
+							
+							Geom = pLine;
+							break;
+						case "POLYGON":
+							gArrObj = gObj.geomarray;
+							pA = [];
+							for (m=0; m<gArrObj.length; m++)
+							{
+								nX = gArrObj[m].x;
+								nY = gArrObj[m].y;
+								pA.push(new MapPoint(nX,nY,new SpatialReference(gObj.geomsr)));
+							}
+							var pPoly:Polygon = new Polygon(null,new SpatialReference(gObj.geomsr));
+							pPoly.addRing(pA);
+							
+							Geom = pPoly;
+							break;
+						case "EXTENT":
+							gArrObj = gObj.geomarray;
+							pA = [];
+							for (m=0; m<gArrObj.length; m++)
+							{
+								nX = gArrObj[m].x;
+								nY = gArrObj[m].y;
+								pA.push(new MapPoint(nX,nY,new SpatialReference(gObj.geomsr)));
+							}
+							var pExtent:Extent = new Extent(pA[0].x,pA[0].y, pA[1].x, pA[1].y, new SpatialReference(gObj.geomsr));
+							
+							Geom = pExtent;
+							break; 
+					}
+					var gra:Graphic = new Graphic(Geom);
+					gra.name = gObj.gname;
+					gra.id = gObj.gid;
+					gra.attributes = gObj.attrib;
+					gra.contextMenu = cMenu;
+					gra.autoMoveToTop = false;
+					gra.addEventListener(MouseEvent.CLICK, graphic_clickHandler);
+					lastDrawnGraphic = gra;
+					
+					switch(gObj.symtypename){
+						
+						case "TextSymbol":
+						{
+							var symFontE:String = gObj.symfonte;
+							var symFontP:String = gObj.symfontp;
+							var fBold:Boolean = symFontE.indexOf("B") > -1 ? true:false;
+							var fItal:Boolean = symFontE.indexOf("I") > -1 ? true:false;
+							var fUnd:Boolean = symFontE.indexOf("U") > -1 ? true:false;
+							var symOut:Boolean = (gObj.symcolor2 > -1)?true:false;
+							var symOutClr:uint = (gObj.symcolor2)?gObj.symcolor2:0;
+							var symBG:Boolean = (gObj.symcolor3 > -1)?true:false;
+							var symBGClr:uint = (gObj.symcolor3)?gObj.symcolor3:0;
+							var symAngle:Number = (gObj.symangle)?gObj.symangle:0;
+							var txtSym:TextSymbol = new TextSymbol(gObj.symtext,null,0,symOut,symOutClr,symBG,symBGClr,symFontP);
+							var txtFormat:TextFormat = new TextFormat(gObj.symtype, gObj.symsize, gObj.symcolor, fBold, fItal, fUnd);
+							txtSym.textFormat = txtFormat;
+							txtSym.angle = symAngle;
+							gra.symbol = txtSym;
+							//gra.mouseEnabled = false;
+							//gra.mouseChildren = false;
+							break;
+						}
+						case "SimpleMarkerSymbol":
+						{
+							var symAngle2:Number = (gObj.symangle)?gObj.symangle:0;
+							var outlineSym0:SimpleLineSymbol = new SimpleLineSymbol(gObj.symltype, gObj.symcolor2, gObj.symalpha2, gObj.symwidth);
+							var ptSym:SimpleMarkerSymbol = new SimpleMarkerSymbol(gObj.symtype, gObj.symsize, gObj.symcolor, gObj.symalpha1,0,0,symAngle2,outlineSym0);
+							gra.symbol = ptSym;
+							break;
+						}
+						case "SimpleLineSymbol":
+						{
+							var lineSym:SimpleLineSymbol = new SimpleLineSymbol(gObj.symtype, gObj.symcolor, gObj.symalpha1, gObj.symwidth);
+							gra.symbol = lineSym;
+							break;
+						}
+						case "SimpleFillSymbol":
+						{
+							var outlineSym:SimpleLineSymbol = new SimpleLineSymbol(gObj.symltype, gObj.symcolor2, gObj.symalpha2, gObj.symwidth);
+							var polySym:SimpleFillSymbol = new SimpleFillSymbol(gObj.symtype, gObj.symcolor, gObj.symalpha1, outlineSym);
+							gra.symbol = polySym;
+							break;
+						}
+					}
+					lodgraphicsLayer.add(gra);
+				}
+			}
+			
+			//called if an error occurs while loading the file contents
+			private function onLoadError(e:IOErrorEvent):void
+			{
+				trace("Error loading file : " + e.text);
+			}
+			
+			private function loadGraLay():void
+			{
+				this.currentState = "DRAW";
+				wTemplate.selectedTitlebarButtonIndex = 1;
+//				create the FileReference instance
+//				fr = new FileReference();
+//				
+//				//listen for when they select a file
+//				fr.addEventListener(Event.SELECT, onFileSelect);
+//				
+//				//listen for when then cancel out of the browse dialog
+//				fr.addEventListener(Event.CANCEL,onCancel);
+//				
+//				//open a native browse dialog that filters for text files
+//				fr.browse(FILE_TYPES);
+			}
+			private function loadlist():void
+			{
+				this.currentState = "eDrawlist";
+				wTemplate.selectedTitlebarButtonIndex = 0;
+				loadgraphic();
+			}
+			private function httpEncoding(param:String):String{  
+				return encodeURIComponent(param);  
+			}  
+			private function savedraw():void
+			{
+				try
+				{
+					if(graphicsLayer.numGraphics==0)
+					{
+						Alert.show("保存图形不能为空！");
+						return;
+					}
+					var name:String =txtName.text;
+					if(name==null||name=="")
+					{
+						Alert.show("保存名称不能为空！");
+						return;
+					}
+				
+				var graphic:String=addGras();
+				var extent:String=map.extent.xmin.toString()+","+map.extent.ymin.toString()+","+map.extent.xmax.toString()
+					+","+map.extent.ymax.toString();
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url= servletcontext + "/phone/EDrawServlet";
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				var params:URLVariables = new URLVariables();                 
+				//这个user,psw就是传入后台的参数user,jsp就用 request.getParameter("user")来取                 
+				params.userid = "123";                
+				params.sty = "put"; 
+				params.name = name;
+				params.graphic = graphic;
+				params.extent = extent;
+				httpservice.addEventListener(ResultEvent.RESULT,addhandler);
+				httpservice.send(params);
+				}
+				catch( e:Error)
+				{
+					Alert.show(e.toString()+graphic);
+				}
+				
+			}
+			private function addhandler(event:ResultEvent):void
+			{
+				var res:String=event.result.toString();
+				
+				if(res.substring(0,4)=="true")
+				{
+					Alert.show("保存成功！");
+					
+				}
+				else
+				{
+					Alert.show("保存失败！");
+				}
+				
+			}
+			private function delhandler(event:ResultEvent):void
+			{
+				var res:String=event.result.toString();
+				if(res.substring(0,4)=="true")
+				{
+					eDrawAL.removeItem(deledraw);
+					
+				}
+				else
+				{
+					Alert.show("删除失败！");
+				}
+			}
+		private	var deledraw:EDraw;
+			private function removeeDraw(event:Event):void
+			{
+				 deledraw = ItemRenderer(event.target).data as EDraw;
+				Alert.yesLabel="确定";  
+				Alert.noLabel="取消";  
+				Alert.show("是否删除本次记录!","提示",3,this,onCloseHandler);
+			}
+			internal function onCloseHandler(evt:CloseEvent):void  
+			{
+				if(evt.detail==Alert.YES)
+				{
+					var httpservice:HTTPService = new HTTPService;
+					httpservice.url= servletcontext + "/phone/EDrawServlet";
+					httpservice.method = "POST";
+					httpservice.resultFormat = "text";
+					var params:URLVariables = new URLVariables();                 
+					//这个user,psw就是传入后台的参数user,jsp就用 request.getParameter("user")来取                 
+					params.userid = httpEncoding("123");                
+					params.sty = httpEncoding("delete"); 
+					params.id = httpEncoding(deledraw.id);
+					httpservice.addEventListener(ResultEvent.RESULT,delhandler);
+					httpservice.send(params);
+				}
+			}
+			private function showeDraw(event:Event):void
+			{
+				var edraw:EDraw = ItemRenderer(event.target).data as EDraw;
+				if(edraw)
+				{
+					map.extent = new Extent(edraw.xmin, edraw.ymin, edraw.xmax, edraw.ymax);
+					onLoadComplete(edraw.graphic);
+					
+				}
+			}
+			private function loadgraphic():void
+			{
+				
+				
+					var httpservice:HTTPService = new HTTPService;
+					httpservice.url= servletcontext + "/phone/EDrawServlet";
+					httpservice.method = "POST";
+					httpservice.resultFormat = "text";
+					var params:URLVariables = new URLVariables();                 
+					//这个user,psw就是传入后台的参数user,jsp就用 request.getParameter("user")来取                 
+					params.userid = httpEncoding("123");                
+					params.sty = httpEncoding("get"); 
+					httpservice.addEventListener(ResultEvent.RESULT,handler);
+					httpservice.send(params);
+			}
+			private function handler(event:ResultEvent):void
+			{
+				eDrawAL.removeAll();
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				
+				var jsonValues:Array = jsonObject["values"] as Array;
+				if(jsonValues==null) return; 
+				var colunms:Array = new Array;
+				for(var i:int = 0;i<jsonValues.length;i++)
+				{ var   edraw:EDraw=new EDraw();
+					edraw.name = jsonValues[i].name as String;
+					edraw.savedate = jsonValues[i].savedate as String;
+					edraw.id = jsonValues[i].id as String;
+					edraw.graphic =jsonValues[i].graphic as String;
+					var extent:String=jsonValues[i].extent as String;
+					var arr:Array=extent.split(",");
+					edraw.userCreated=true;
+					edraw.xmax=	Number(arr[2]);
+					edraw.xmin=	Number(arr[0]);
+					edraw.ymax=	Number(arr[3]);
+					edraw.ymin=	Number(arr[1]);
+					eDrawAL.addItem(edraw);
+										
+				}
+				
+			}
+			private function addGras():String 
+			{
+				drawAC = new ArrayCollection();
+
+				var i:Number;
+				var symTypeName:String = "";
+				var symType:String = "";
+				var symLType:String = "";
+				var symFontE:String = "";
+				var symFontP:String = "middle";
+				var symSize:Number = 1;
+				var symColor:Number = 0x000000;
+				var symColor2:Number = 0x000000;
+				var symColor3:Number = 0x000000;
+				var symWidth:Number = 1;
+				var symText:String = "";
+				var symAlpha1:Number = 1;
+				var symAlpha2:Number = 1;
+				var geomType:String = "";
+				var geomSR:Number;
+				var gname:String = "";
+				var symAngle:Number = 0;
+				
+				for (i = 0; i < graphicsLayer.numGraphics; i++)
+				{
+					var geomArray:Array = [];
+					symText = "";
+					//var gra:Graphic = graphicsLayer.getChildAt(i) as Graphic;
+					var array:ArrayCollection = graphicsLayer.graphicProvider as ArrayCollection;
+					var gra:Graphic = array.getItemAt(i) as Graphic;
+					lodgraphicsLayer.add(gra);
+					switch(gra.geometry.type)
+					{
+						case Geometry.MAPPOINT:
+						{
+							if (gra.symbol is TextSymbol) {
+								var txtSym:TextSymbol = gra.symbol as TextSymbol;
+								symTypeName = "TextSymbol";
+								var txtFormat:TextFormat = txtSym.textFormat;
+								if(useDefaultFont){
+									symType = "Arial"
+								}else{
+									symType = txtFormat.font
+								}
+								symText = txtSym.text;
+								if (txtFormat.bold)
+									symFontE += "B"
+								if (txtFormat.italic)
+									symFontE += "I"
+								if (txtFormat.underline)
+									symFontE += "U"
+								symSize = Number(txtFormat.size);
+								symColor = Number(txtFormat.color);
+								symAngle = txtSym.angle;
+								if(txtSym.border){
+									symColor2 = Number(txtSym.borderColor);
+								}else{
+									symColor2 = -1;
+								}
+								if(txtSym.background){
+									symColor3 = Number(txtSym.backgroundColor);
+								}else{
+									symColor3 = -1;
+								}
+								symFontP = txtSym.placement;
+							} else {
+								var ptSym:SimpleMarkerSymbol = gra.symbol as SimpleMarkerSymbol;
+								symTypeName = "SimpleMarkerSymbol";
+								symType = ptSym.style;
+								symColor = ptSym.color;
+								symSize = ptSym.size;
+								symAlpha1 = ptSym.alpha;
+								symColor2 = ptSym.outline.color;
+								symAlpha2 = ptSym.outline.alpha;
+								symWidth = ptSym.outline.width;
+								symLType = ptSym.outline.style;
+								symAngle = ptSym.angle;
+							}
+							geomType = "MAPPOINT";
+							var pnt:MapPoint = gra.geometry as MapPoint;
+							geomSR = gra.geometry.spatialReference.wkid
+							geomArray.push(pnt);
+							break;
+						}
+						case Geometry.POLYLINE:
+						{
+							var lineSym:SimpleLineSymbol = gra.symbol as SimpleLineSymbol;
+							symTypeName = "SimpleLineSymbol";
+							symType = lineSym.style;
+							symWidth = lineSym.width;
+							symAlpha1 = lineSym.alpha;
+							symColor = lineSym.color;
+							geomType = "POLYLINE";
+							var polyline:Polyline = gra.geometry as Polyline;
+							for (var i1:int = 0; i1 < polyline.paths.length; i1++)
+							{
+								for (var j:int = 0; j < polyline.paths[i1].length; j++)
+								{
+									var mp:MapPoint = polyline.getPoint(i1,j) as MapPoint;
+									geomArray.push(mp);
+								}
+							}
+							geomSR = gra.geometry.spatialReference.wkid
+							break;
+						}
+						case Geometry.POLYGON:
+						{
+							var polySym:SimpleFillSymbol = gra.symbol as SimpleFillSymbol;
+							symTypeName = "SimpleFillSymbol";
+							symType = polySym.style;
+							symWidth = polySym.outline.width;
+							symLType = polySym.outline.style;
+							symAlpha1 = polySym.alpha;
+							symAlpha2 = polySym.outline.alpha
+							symColor = polySym.color;
+							symColor2 = polySym.outline.color;
+							geomType = "POLYGON";
+							var poly:Polygon= gra.geometry as Polygon;
+							for (var i2:int = 0; i2 < poly.rings.length; i2++)
+							{
+								for (var j1:int = 0; j1 < poly.rings[i2].length; j1++)
+								{
+									var mp2:MapPoint = poly.getPoint(i2,j1) as MapPoint;
+									geomArray.push(mp2);
+								}
+							}
+							geomSR = gra.geometry.spatialReference.wkid
+							break;
+						}
+						case Geometry.EXTENT:
+						{
+							var rectSym:SimpleFillSymbol = gra.symbol as SimpleFillSymbol;
+							symTypeName = "SimpleFillSymbol";
+							symType = rectSym.style;
+							symWidth = rectSym.outline.width;
+							symLType = rectSym.outline.style;
+							symAlpha1 = rectSym.alpha;
+							symAlpha2 = rectSym.outline.alpha
+							symColor = rectSym.color;
+							symColor2 = rectSym.outline.color;
+							geomType = "EXTENT";
+							var rect:Extent= gra.geometry as Extent;
+							var mp3:MapPoint;
+							mp3 = new MapPoint(rect.xmin, rect.ymin, gra.geometry.spatialReference);
+							geomArray.push(mp3);
+							mp3 = new MapPoint(rect.xmax, rect.ymax, gra.geometry.spatialReference);
+							geomArray.push(mp3);
+							geomSR = gra.geometry.spatialReference.wkid
+							break;
+						}
+					}
+					var gObj:Object = {
+						geomtype: geomType,
+						geomarray: geomArray,
+						geomsr: geomSR,
+						symtypename: symTypeName,
+						symtype: symType,
+						symsize: symSize,
+						symangle: symAngle,
+						symcolor: symColor,
+						symcolor2: symColor2,
+						symcolor3: symColor3,
+						symwidth: symWidth,
+						symtext: symText,
+						symalpha1: symAlpha1,
+						symalpha2: symAlpha2,
+						cmenu: gra.contextMenu,
+							symfonte: symFontE,
+							symfontp: symFontP,
+							symltype: symLType,
+							gname: gra.name,
+							gid: gra.id,
+							attrib: gra.attributes
+					}
+					drawAC.addItem(gObj);
+				}
+				graphicsLayer.clear();
+				return com.esri.ags.utils.JSON.encode(drawAC.source);
+				
+			}
+			
+			protected function chkMeasurements_changeHandler(event:Event):void
+			{
+				if (chkMeasurements.selected){
+					wTemplate.widgetWidth = wTemplate.width = 500;
+					wTemplate.widgetHeight = wTemplate.height = 325;
+					AppEvent.dispatch(AppEvent.WIDGET_FOCUS, this.widgetId);
+				}else{
+					wTemplate.widgetHeight = wTemplate.height = 265;
+					wTemplate.widgetWidth = wTemplate.width = 420;
+				}
+			}
+			
+			private function fillSymbolChangeHandler():void
+			{
+				if (!finishDrawing)
+				{
+					setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+				}
+			}
+//End My Add
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+<!--My Add -->				
+		<mx:NumberFormatter		id="numFormatter2" 
+								useThousandsSeparator="false" 
+								precision="{numPrecision}"/>
+<!-- End My Add -->
+		<s:GlowFilter id="glowFilter"
+					  alpha="1"
+					  color="{getStyle('focusColor')}"
+					  inner="true"
+					  strength="2"/>
+		<esri:GeometryService id="geometryService"
+							  fault="geometryService_faultHandler(event)"
+							  projectComplete="geometryService_projectCompleteHandler(event)"
+							  simplifyComplete="geometryService_simplifyCompleteHandler(event)"
+							  url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"/>
+		<mx:NumberFormatter id="numFormatter"
+							precision="2"
+							useThousandsSeparator="true"/>
+		<esri:SimpleFillSymbol id="fillSymbol"
+							   alpha="{numFillAlpha.value}"
+							   color="{cpFill.selectedColor}"
+							   style="{fillStyle.selectedItem.style}">
+			<esri:SimpleLineSymbol width="{numFillOutlineWidth.value}" color="{cpFillOutline.selectedColor}"/>
+		</esri:SimpleFillSymbol>
+		<esri:SimpleLineSymbol id="lineSymbol"
+							   width="{numLineWidth.value}"
+							   alpha="{numLineAlpha.value}"
+							   color="{cpLine.selectedColor}"
+							   style="{lineStyle.selectedItem.style}"/>
+		<esri:EditTool id="editTool" map="{map}"/>
+	</fx:Declarations>
+	
+	<viewer:WidgetTemplate id="wTemplate"
+						   width="420" height="280"
+						   closed="wTemplate_closeHandler(event)"
+						   minHeight="240"
+						   minWidth="280"
+						   open="wTemplate_openHandler(event)">
+		<s:Group id="eDrawList"
+				 width="100%" height="100%"
+				 visible="false"
+				 visible.eDrawlist="true"
+				 >
+			<s:Scroller width="100%" height="100%">
+				<eDraw:EDrawDataGroup id="GraphicDG"
+									  eDrawClick="showeDraw(event)"
+									  eDrawDelete="removeeDraw(event)"
+									  dataProvider="{eDrawAL}">
+					<eDraw:layout>
+						<s:VerticalLayout gap="2"
+										  horizontalAlign="justify"
+										  useVirtualLayout="true"/>
+					</eDraw:layout>
+				</eDraw:EDrawDataGroup>
+			</s:Scroller>
+		</s:Group>
+		<s:Group id="save"
+				 width="100%" height="100%"
+				 visible="false"
+				 visible.SAVE="true"
+				 >
+			<s:layout>
+				<s:VerticalLayout gap="10"
+								  horizontalAlign="center"
+								  paddingTop="10"/>
+			</s:layout>
+			<s:Label width="100%" text="{tiLabel}"/>
+			<s:TextInput id="txtName" width="98%"/>
+			<s:Button click="savedraw()" label="{submitLabel}"/>
+		</s:Group>
+		<s:VGroup id="Draw"			
+				  width="100%" height="100%"
+				  gap="2"
+				  visible="false"
+				  visible.DRAW="true">
+			<s:HGroup id="drawImageGroup"
+					  width="100%"
+					  gap="2"
+					  horizontalAlign="center">
+				<mx:Image name="{DrawTool.MAPPOINT}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_point.png"
+						  toolTip="{drawPointLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.POLYLINE}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_line.png"
+						  toolTip="{drawLineLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.FREEHAND_POLYLINE}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_freeline.png"
+						  toolTip="{drawFreehandLineLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.EXTENT}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_rect.png"
+						  toolTip="{drawRectangleLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.CIRCLE}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_circle.png"
+						  toolTip="{drawCircleLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.ELLIPSE}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_ellipse.png"
+						  toolTip="{drawEllipseLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.POLYGON}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_poly.png"
+						  toolTip="{drawPolygonLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.FREEHAND_POLYGON}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_freepoly.png"
+						  toolTip="{drawFreehandPolygonLabel}"
+						  useHandCursor="true"/>
+				<mx:Image id="text" name="{DrawTool.MAPPOINT}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_text.png"
+						  toolTip="{addTextLabel}"
+						  useHandCursor="true"/>
+			</s:HGroup>
+			<s:HGroup width="100%"
+					  horizontalAlign="right"
+					  paddingRight="10"
+					  paddingTop="2">
+				<s:Label buttonMode="true"
+						 click="clear()"
+						 fontWeight="bold"
+						 includeInLayout="{graphicsLayer.numGraphics &gt; 0}"
+						 text="{clearLabel}"
+						 textDecoration="underline"
+						 visible="{graphicsLayer.numGraphics &gt; 0}"/>
+			</s:HGroup>
+			<mx:Form id="frmDraw"
+					 width="100%" height="100%"
+					 paddingBottom="0"
+					 verticalGap="8"
+					 verticalScrollPolicy="off">
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%" labelWidth="80"
+							 includeInLayout="{addingText}"
+							 label="{textLabel}"
+							 visible="{addingText}">
+					<s:HGroup width="100%" verticalAlign="contentJustify">
+						<mx:TextInput id="txtLabel"
+									  width="100%"
+									  text=""/>
+						<s:ToggleButton id="bold"
+										width="32"
+										fontWeight="bold"
+										label="{textBoldLabel}"
+										toolTip="{textBoldTooltip}"/>
+						<s:ToggleButton id="italic"
+										width="32"
+										fontStyle="italic"
+										fontWeight="bold"
+										label="{textItalicLabel}"
+										toolTip="{textItalicTooltip}"/>
+						<s:ToggleButton id="underline"
+										width="32"
+										fontWeight="bold"
+										label="{textUnderlineLabel}"
+										textDecoration="underline"
+										toolTip="{textUnderlineTooltip}"/>
+					</s:HGroup>
+				</eDraw:FormItemVerticalAlign>
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%" labelWidth="80"
+							 includeInLayout="{addingText}"
+							 label="{textFontLabel}"
+							 visible="{addingText}">
+					<s:DropDownList id="textFont"
+									labelField="name"
+									selectedIndex="0">
+						<s:ArrayList>
+							<fx:Object name="宋体" font="{getDefaultString('textFont1')}"/>
+						</s:ArrayList>
+					</s:DropDownList>
+				</eDraw:FormItemVerticalAlign>
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%" labelWidth="80"
+							 includeInLayout="{addingText}"
+							 label="{textColorLabel}"
+							 visible="{addingText}">
+					<s:HGroup width="100%"
+							  gap="4"
+							  verticalAlign="middle">
+						<mx:ColorPicker id="cpText" selectedColor="0x3FAFDC"/>
+						<mx:Label text="{textSizeLabel}"/>
+						<mx:NumericStepper id="numTextSize"
+										   maximum="100"
+										   minimum="0"
+										   value="20"/>
+<!-- My Add -->
+						<mx:Label text="{textRotateLabel}"/>
+						<mx:NumericStepper id="numTextRotation"
+										   maximum="360"
+										   minimum="-360"
+										   value="0" width="50"/>
+<!-- End My Add -->
+					</s:HGroup>
+				</eDraw:FormItemVerticalAlign>
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%" labelWidth="80"
+							 includeInLayout="{drawingPoint}"
+							 label="{markerColorLabel}"
+							 visible="{drawingPoint}">
+					<s:HGroup width="100%"
+							  gap="55"
+							  verticalAlign="middle">
+						<mx:ColorPicker id="cpMarker" selectedColor="0x3FAFDC"/>
+						<s:HGroup width="100%"
+								  gap="24"
+								  verticalAlign="middle">
+							<mx:Label text="{markerStyleLabel}"/>
+							<s:DropDownList id="markerStyle"
+											labelField="name"
+											selectedIndex="0">
+								<s:ArrayList>
+									<fx:Object name="{getDefaultString('markerStyleCircle')}" style="{SimpleMarkerSymbol.STYLE_CIRCLE}"/>
+									<fx:Object name="{getDefaultString('markerStyleCross')}" style="{SimpleMarkerSymbol.STYLE_CROSS}"/>
+									<fx:Object name="{getDefaultString('markerStyleDiamond')}" style="{SimpleMarkerSymbol.STYLE_DIAMOND}"/>
+									<fx:Object name="{getDefaultString('markerStyleSquare')}" style="{SimpleMarkerSymbol.STYLE_SQUARE}"/>
+									<fx:Object name="{getDefaultString('markerStyleTriangle')}" style="{SimpleMarkerSymbol.STYLE_TRIANGLE}"/>
+									<fx:Object name="{getDefaultString('markerStyleX')}" style="{SimpleMarkerSymbol.STYLE_X}"/>
+								</s:ArrayList>
+							</s:DropDownList>
+						</s:HGroup>
+					</s:HGroup>
+				</eDraw:FormItemVerticalAlign>
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%" labelWidth="80"
+							 includeInLayout="{drawingPoint}"
+							 label="{markerSizeLabel}"
+							 visible="{drawingPoint}">
+					<s:HGroup width="100%"
+							  gap="7"
+							  verticalAlign="middle">
+<!-- Change gap from 21 to 7 -->						
+						<mx:NumericStepper id="numMarkerSize"
+										   maximum="50"
+										   minimum="0"
+										   value="15"/>
+						<s:Label text="{markerAlphaLabel}"/>
+						<mx:NumericStepper id="numMarkerAlpha"
+										   maximum="1"
+										   minimum="0"
+										   stepSize="0.1"
+										   value="1"/>
+<!-- My Add -->
+						<s:Label text="{markerRotationLabel}"/>
+						<mx:NumericStepper id="numMarkerAngle"
+										   maximum="360"
+										   minimum="-360"
+										   stepSize="1"
+										   value="0"
+										   width="50"/>
+<!-- End My Add -->
+					</s:HGroup>
+				</eDraw:FormItemVerticalAlign>
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%" labelWidth="80"
+							 includeInLayout="{drawingPoint}"
+							 label="{markerOutlineColorLabel}"
+							 visible="{drawingPoint}">
+					<s:HGroup width="100%"
+							  gap="55"
+							  verticalAlign="middle">
+						<mx:ColorPicker id="cpMarkerOutline" selectedColor="0x00000"/>
+						<s:HGroup width="100%"
+								  gap="24"
+								  verticalAlign="middle">
+							<s:Label text="{markerOutlineWidthLabel}"/>
+							<mx:NumericStepper id="numMarkerOutlineWidth"
+											   maximum="5"
+											   minimum="0"
+											   stepSize="1"
+											   value="1"/>
+						</s:HGroup>
+					</s:HGroup>
+				</eDraw:FormItemVerticalAlign>
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%" labelWidth="80"
+							 includeInLayout="{drawingPolygon}"
+							 label="{fillColorLabel}"
+							 visible="{drawingPolygon}">
+					<s:HGroup width="100%"
+							  gap="55"
+							  verticalAlign="middle">
+						<mx:ColorPicker id="cpFill" selectedColor="0x3FAFDC"/>
+						<s:HGroup width="100%"
+								  gap="24"
+								  verticalAlign="middle">
+							<mx:Label text="{fillStyleLabel}"/>
+							<s:DropDownList id="fillStyle"
+											labelField="name"
+											selectedIndex="0">
+								<s:ArrayList>
+									<fx:Object name="{getDefaultString('fillStyleSolid')}" style="{SimpleFillSymbol.STYLE_SOLID}"/>
+									<fx:Object name="{getDefaultString('fillStyleBackwardDiagonal')}" style="{SimpleFillSymbol.STYLE_BACKWARD_DIAGONAL}"/>
+									<fx:Object name="{getDefaultString('fillStyleCross')}" style="{SimpleFillSymbol.STYLE_CROSS}"/>
+									<fx:Object name="{getDefaultString('fillStyleForwardDiagonal')}" style="{SimpleFillSymbol.STYLE_FORWARD_DIAGONAL}"/>
+									<fx:Object name="{getDefaultString('fillStyleHorizontal')}" style="{SimpleFillSymbol.STYLE_HORIZONTAL}"/>
+									<fx:Object name="{getDefaultString('fillStyleVertical')}" style="{SimpleFillSymbol.STYLE_VERTICAL}"/>
+								</s:ArrayList>
+							</s:DropDownList>
+						</s:HGroup>
+					</s:HGroup>
+				</eDraw:FormItemVerticalAlign>
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%" labelWidth="80"
+							 includeInLayout="{drawingPolygon}"
+							 label="{fillAlphaLabel}"
+							 visible="{drawingPolygon}">
+					<mx:NumericStepper id="numFillAlpha"
+									   maximum="1"
+									   minimum="0"
+									   stepSize="0.1"
+									   value="0.5"/>
+				</eDraw:FormItemVerticalAlign>
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%" labelWidth="80"
+							 includeInLayout="{drawingPolygon}"
+							 label="{fillOutlineColorLabel}"
+							 visible="{drawingPolygon}">
+					<s:HGroup width="100%"
+							  gap="55"
+							  verticalAlign="middle">
+						<mx:ColorPicker id="cpFillOutline" selectedColor="0x000000"/>
+						<s:HGroup width="100%"
+								  gap="24"
+								  verticalAlign="middle">
+							<s:Label text="{fillOutlineWidthLabel}"/>
+							<mx:NumericStepper id="numFillOutlineWidth"
+											   maximum="5"
+											   minimum="0"
+											   stepSize="1"
+											   value="1"/>
+						</s:HGroup>
+					</s:HGroup>
+				</eDraw:FormItemVerticalAlign>
+<!-- My Add -->				
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" id="fillOutlineAlpha"
+							 width="100%" labelWidth="80"
+							 includeInLayout="{drawingPolygon}"
+							 label="{fillOutlineAlphaLabel}"
+							 visible="{drawingPolygon}">
+					<s:HGroup width="100%"
+							  gap="25"
+							  verticalAlign="middle">
+						<mx:NumericStepper id="numFillOutlineAlpha"
+										   change="fillSymbolChangeHandler()"
+										   maximum="1"
+										   minimum="0"
+										   stepSize="0.1"
+										   value="0.8"/>
+						<s:HGroup width="100%"
+								  gap="22"
+								  verticalAlign="middle">
+							<mx:Label text="{fillStyleLabel}"/>
+							<s:DropDownList id="fillOutlineStyle"
+											change="fillSymbolChangeHandler()"
+											labelField="name"
+											selectedIndex="0">
+								<s:ArrayList>
+									<fx:Object name="{getDefaultString('lineStyleSolid')}" style="{SimpleLineSymbol.STYLE_SOLID}"/>
+									<fx:Object name="{getDefaultString('lineStyleDash')}" style="{SimpleLineSymbol.STYLE_DASH}"/>
+									<fx:Object name="{getDefaultString('lineStyleDot')}" style="{SimpleLineSymbol.STYLE_DOT}"/>
+									<fx:Object name="{getDefaultString('lineStyleDashDot')}" style="{SimpleLineSymbol.STYLE_DASHDOT}"/>
+									<fx:Object name="{getDefaultString('lineStyleDashDotDot')}" style="{SimpleLineSymbol.STYLE_DASHDOTDOT}"/>
+								</s:ArrayList>
+							</s:DropDownList>
+						</s:HGroup>
+					</s:HGroup>
+				</eDraw:FormItemVerticalAlign>
+<!-- End My Add -->
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%"
+							 includeInLayout="{drawingLine}"
+							 label="{lineColorLabel}" labelWidth="80"
+							 visible="{drawingLine}">
+					<s:HGroup width="100%"
+							  gap="55"
+							  verticalAlign="middle">
+						<mx:ColorPicker id="cpLine" selectedColor="0x3FAFDC"/>
+						<s:HGroup width="100%"
+								  gap="24"
+								  verticalAlign="middle">
+							<s:Label text="{lineStyleLabel}"/>
+							<s:DropDownList id="lineStyle"
+											labelField="name"
+											selectedIndex="0">
+								<s:ArrayList>
+									<fx:Object name="{getDefaultString('lineStyleSolid')}" style="{SimpleLineSymbol.STYLE_SOLID}"/>
+									<fx:Object name="{getDefaultString('lineStyleDash')}" style="{SimpleLineSymbol.STYLE_DASH}"/>
+									<fx:Object name="{getDefaultString('lineStyleDot')}" style="{SimpleLineSymbol.STYLE_DOT}"/>
+									<fx:Object name="{getDefaultString('lineStyleDashDot')}" style="{SimpleLineSymbol.STYLE_DASHDOT}"/>
+									<fx:Object name="{getDefaultString('lineStyleDashDotDot')}" style="{SimpleLineSymbol.STYLE_DASHDOTDOT}"/>
+								</s:ArrayList>
+							</s:DropDownList>
+						</s:HGroup>
+					</s:HGroup>
+				</eDraw:FormItemVerticalAlign>
+				<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%"
+							 includeInLayout="{drawingLine}"
+							 label="{lineWidthLabel}" labelWidth="80"
+							 visible="{drawingLine}">
+					<s:HGroup width="100%"
+							  gap="18"
+							  verticalAlign="middle">
+						<mx:NumericStepper id="numLineWidth"
+										   maximum="50"
+										   minimum="0"
+										   stepSize="1"
+										   value="5"/>
+						<mx:Label text="{lineAlphaLabel}"/>
+						<mx:NumericStepper id="numLineAlpha"
+										   maximum="1"
+										   minimum="0"
+										   stepSize="0.1"
+										   value="1"/>
+					</s:HGroup>
+				</eDraw:FormItemVerticalAlign>
+			</mx:Form>
+			<s:VGroup width="100%" height="100%"
+					  gap="0"
+					  includeInLayout="{showMeasurements}"
+					  paddingTop="2"
+					  visible="{showMeasurements}">
+				<s:CheckBox id="chkMeasurements" label="{showmeasurementsLabel}" click="chkMeasurements_changeHandler(event)"/>
+				<mx:Form width="100%" height="100%"
+						 includeInLayout="{chkMeasurements.selected}"
+						 paddingBottom="0"
+						 verticalScrollPolicy="off"
+						 visible="{chkMeasurements.selected}">
+<!-- My Add -->
+					<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%"
+								 includeInLayout="{chkMeasurements.selected &amp;&amp; PointXY}"
+								 label="{pointsUnitsLabel}" labelWidth="100"
+								 visible="{chkMeasurements.selected &amp;&amp; PointXY}" >
+						<s:DropDownList id="cboPoint" width="100%"
+										requireSelection="true"
+										selectedIndex="0"/>
+					</eDraw:FormItemVerticalAlign>
+<!-- End My Add -->
+					<eDraw:FormItemVerticalAlign verticalAlign="middle" width="100%"
+								 includeInLayout="{chkMeasurements.selected &amp;&amp; !PointXY}"
+								 label="{distanceUnitsLabel}" labelWidth="100"
+								 visible="{chkMeasurements.selected &amp;&amp; !PointXY}">
+<!-- My Add -->
+						<s:HGroup width="100%">
+							<s:DropDownList id="cboDistance"
+											labelField="name"
+											requireSelection="true"
+											selectedIndex="0" width="100%">
+								<s:ArrayList>
+									<fx:Object name="{getDefaultString('unitsKilometers')}"
+											   abbr="{getDefaultString('unitsKilometersAbbr')}"
+											   conversion=".001"/>
+									<fx:Object name="{getDefaultString('unitsMiles')}"
+											   abbr="{getDefaultString('unitsMilesAbbr')}"
+											   conversion="0.000621"/>
+									<fx:Object name="{getDefaultString('unitsMeters')}"
+											   abbr="{getDefaultString('unitsMetersAbbr')}"
+											   conversion="1"/>
+									<fx:Object name="{getDefaultString('unitsFeet')}"
+											   abbr="{getDefaultString('unitsFeetAbbr')}"
+											   conversion="3.2808"/>
+									<fx:Object name="{getDefaultString('unitsYards')}"
+											   abbr="{getDefaultString('unitsYardsAbbr')}"
+											   conversion="1.0936133"/>
+								</s:ArrayList>
+							</s:DropDownList>
+							<mx:Label text="{areaUnitsLabel}" includeInLayout="{chkMeasurements.selected &amp;&amp; drawingPolygon}"
+									  visible="{chkMeasurements.selected &amp;&amp; drawingPolygon}"/>
+							<s:DropDownList id="cboArea"
+											labelField="name"
+											requireSelection="true"
+											selectedIndex="0" width="100%"
+											includeInLayout="{chkMeasurements.selected &amp;&amp; drawingPolygon}"
+											visible="{chkMeasurements.selected &amp;&amp; drawingPolygon}">
+								<s:ArrayList>
+									<fx:Object name="{getDefaultString('unitsSquareKilometers')}"
+											   abbr="{getDefaultString('unitsSquareKilometersAbbr')}"
+											   conversion="0.000001"/>
+									<fx:Object name="{getDefaultString('unitsSquareMiles')}"
+											   abbr="{getDefaultString('unitsSquareMilesAbbr')}"
+											   conversion="0.0000003861021"/>
+									<fx:Object name="{getDefaultString('unitsAcres')}"
+											   abbr="{getDefaultString('unitsAcresAbbr')}"
+											   conversion="0.00024710538147"/>
+									<fx:Object name="{getDefaultString('unitsHectares')}"
+											   abbr="{getDefaultString('unitsHectaresAbbr')}"
+											   conversion="0.0001"/>
+									<fx:Object name="{getDefaultString('unitsSquareMeters')}"
+											   abbr="{getDefaultString('unitsSquareMetersAbbr')}"
+											   conversion="1"/>
+									<fx:Object name="{getDefaultString('unitsSquareFeet')}"
+											   abbr="{getDefaultString('unitsSquareFeetAbbr')}"
+											   conversion="10.763910417"/>
+									<fx:Object name="{getDefaultString('unitsSquareYards')}"
+											   abbr="{getDefaultString('unitsSquareYardsAbbr')}"
+											   conversion="1.19599005"/>
+								</s:ArrayList>
+							</s:DropDownList>
+						</s:HGroup>
+<!-- End My Add -->
+					</eDraw:FormItemVerticalAlign>
+					<eDraw:FormItemVerticalAlign verticalAlign="middle" id="txtFont2"
+								 width="100%" labelWidth="100"
+								 includeInLayout="{chkMeasurements.selected}"
+								 label="{textFontLabel}"
+								 visible="{chkMeasurements.selected}">
+						<s:HGroup width="100%"
+								  gap="4"
+								  verticalAlign="middle">
+							<s:DropDownList id="textFont2"
+											labelField="name"
+											selectedIndex="1">
+								<s:ArrayList>
+									<fx:Object name="宋体" font="{getDefaultString('textFont1')}"/>
+									</s:ArrayList>	
+							</s:DropDownList>
+							<s:ToggleButton id="bold2"
+											width="28"
+											fontWeight="bold"
+											label="{textBoldLabel}"
+											toolTip="{textBoldTooltip}"/>
+							<s:ToggleButton id="italic2"
+											width="28"
+											fontStyle="italic"
+											fontWeight="bold"
+											label="{textItalicLabel}"
+											toolTip="{textItalicTooltip}"/>
+							<s:ToggleButton id="underline2"
+											width="28"
+											fontWeight="bold"
+											label="{textUnderlineLabel}"
+											textDecoration="underline"
+											toolTip="{textUnderlineTooltip}"/>
+							<mx:ColorPicker id="cpText2" selectedColor="0x000000"/>
+							<mx:Label text="{textSizeLabel}"/>
+							<mx:NumericStepper id="numTextSize2" width="50"
+											   maximum="100"
+											   minimum="0"
+											   value="12"/>
+						</s:HGroup>
+					</eDraw:FormItemVerticalAlign>
+<!-- End My Add -->
+				</mx:Form>
+			</s:VGroup>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

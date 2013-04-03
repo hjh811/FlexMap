@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" fontFamily="宋体"
+				   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:viewer="com.esri.viewer.*" xmlns:components="com.esri.viewer.components.*" layout="absolute"  widgetConfigLoaded="init()"  x="600" y="300" xmlns:Query="widgets.Query.*" xmlns:geometry="com.esri.ags.geometry.*"
+				   xmlns:esri="http://www.esri.com/2008/ags">
+	<viewer:states>
+		<s:State name="main"/>
+		<s:State name="SSCX"/> 
+		<s:State name="FSXX"/>
+		<s:State name="ZBDW"/>
+		<s:State name="QYDW"/>
+	</viewer:states>
+	
+	<viewer:transitions>
+		<s:Transition autoReverse="true" toState="*">
+			<s:Fade targets="{[main,XXCX,ZBDW,QYDW]}"/>
+		</s:Transition>
+	</viewer:transitions>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.viewer.managers.Info;
+			import com.esri.ags.SpatialReference;
+			import com.esri.ags.events.MapMouseEvent;
+			import com.esri.ags.events.QueryEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.SimpleMarkerSymbol;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.viewer.managers.DMInfo;
+			import com.esri.viewer.managers.ImageMedioInfo;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.mx_internal;
+			import mx.events.ItemClickEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.validators.Validator;
+			
+			import spark.components.TextArea;
+			import spark.components.supportClasses.ItemRenderer;
+			[Bindable]
+			private var moduleAC:ArrayCollection;
+			private const ICON_URL:String = "assets/images/";
+			
+			private var graphicsLayer:GraphicsLayer = new GraphicsLayer;
+			private var pictureSymbol:PictureMarkerSymbol= new PictureMarkerSymbol("assets/images/i_pin.png",32,32,13,15);
+			private var servletcontext:String = "";
+			private function init():void
+			{
+				if (configXML)
+				{
+					var moduleList:XMLList=configXML..module;
+					moduleAC=new ArrayCollection();
+					for (var i:Number=0; i < moduleList.length(); i++)
+					{
+						var moduleid:String=moduleList[i].@id;
+						var icon:String=moduleList[i].@icon;
+						var title:String=moduleList[i].@title;
+						var key:String=moduleList[i].@key;
+						var display:String=moduleList[i];
+						
+						
+						if (display == "true")
+						{
+							var modulemark:Object={icon: icon, title: title, display: display,key:key};
+							moduleAC.addItem(modulemark);
+						}
+					}
+					
+					var layers:XMLList = configXML..layer;
+					//					for (var j:Number=0; j < layers.length(); j++)
+					//					{
+					layerComb.dataProvider = layers;
+					//					}
+					this.map.addLayer(graphicsLayer);
+					addTitleBarButtons();
+					servletcontext = this.configData.configXML.servletcontext;
+				}
+			}
+			
+			private function addTitleBarButtons():void
+			{
+				wTemplate.addTitlebarButton(ICON_URL + "i_home.png", "主菜单", showMain);
+				
+				wTemplate.addTitlebarButton(ICON_URL + "i_table.png", "设施查询", showSSCX);
+				wTemplate.addTitlebarButton(ICON_URL + "i_edit.png", "坐标定位", showZBDW);
+//				wTemplate.addTitlebarButton(ICON_URL + "i_zoomprevious.png", "区域定位", showQYDW);
+			}
+			
+			private function clickMoudel(event:Event):void
+			{
+				var modulemark:Object=event.currentTarget.infoData;
+				if (modulemark.key == "SSCX")
+				{
+					showSSCX();
+				}
+				else if (modulemark.key == "ZBDW")
+				{
+					showZBDW();
+				}
+				else if (modulemark.key == "QYDW")
+				{
+					showQYDW();
+				}
+			}
+			
+			private function showMain():void
+			{
+				this.currentState = "main";
+				wTemplate.selectedTitlebarButtonIndex = 0; // used to indicate selected titlebar button when automatically switching state
+			}
+			
+			private function showSSCX():void
+			{
+				this.currentState = "SSCX";
+				wTemplate.selectedTitlebarButtonIndex = 1;
+			}
+			private function showZBDW():void
+			{
+				this.currentState = "ZBDW";
+				wTemplate.selectedTitlebarButtonIndex = 2;
+			}
+			private function showQYDW():void
+			{
+				this.currentState = "QYDW";
+				wTemplate.selectedTitlebarButtonIndex = 3;
+			}
+			
+			protected function wTemplate_closedHandler(event:Event):void
+			{
+				queryInfoResultAC = null;
+				graphicsLayer.clear();
+				this.map.infoWindow.hide();
+			}
+			
+			private function queryRecord(event:Event):void
+			{
+				queryInfoResultAC = null;
+				graphicsLayer.clear();
+				var queryTask:QueryTask = new QueryTask;
+				queryTask.url = this.layerComb.selectedItem.@layerid;
+				queryTask.addEventListener(QueryEvent.EXECUTE_COMPLETE,queryTaskHandler);
+				queryTask.useAMF = false;
+				var query:Query = new Query;
+				query.returnGeometry = true;
+				query.outFields = ["*"];
+				query.where = this.layerComb.selectedItem.@field + " like '%" + TZBH.text +"%'";
+				queryTask.execute(query);
+			}
+			
+			[Bindable]
+			private var queryInfoResultAC:ArrayCollection;
+			private function queryTaskHandler(event:QueryEvent):void
+			{
+				//				Alert.show(event.featureSet.features.length.toString());
+				
+				if(event.featureSet!=null && event.featureSet.features.length>0)
+				{
+					queryInfoResultAC = new ArrayCollection;
+					for(var i:int = 0;i<event.featureSet.features.length;i++)
+					{
+						var queryInfoResult:QueryInfoResult = new QueryInfoResult();
+						queryInfoResult.title = event.featureSet.features[i].attributes[this.layerComb.selectedItem.@field];
+						//						Alert.show(event.featureSet.features[i].attributes["TBZH"]);
+						//						queryInfoResult.content = event.featureSet.features[i].attributes["NAME"];
+						queryInfoResult.icon = "assets/images/i_pin.png";
+						var gra:Graphic = new Graphic;
+						var pt:MapPoint = event.featureSet.features[i].geometry as MapPoint;
+						gra.geometry=pt;
+						gra.symbol = pictureSymbol;
+						
+						queryInfoResult.point = pt;
+						queryInfoResult.symbol = pictureSymbol;
+						queryInfoResult.geometry = pt;
+						queryInfoResultAC.addItem(queryInfoResult); 
+						
+						gra.attributes = queryInfoResult;
+						gra.addEventListener(MouseEvent.MOUSE_OVER,mouseOverHandler);
+						graphicsLayer.add(gra);
+					}
+				}
+			}
+			
+			private function showInfo(queryInfoResult:QueryInfoResult):void
+			{
+				if (queryInfoResult.geometry.type == Geometry.MAPPOINT)
+				{
+					map.infoWindow.content = null;
+					if(this.layerComb.selectedItem.@name =="排水口")
+					{
+						
+						var imageMedioInfo:ImageMedioInfo = new ImageMedioInfo;
+						map.infoWindow.content = imageMedioInfo;
+						imageMedioInfo.TBZH = queryInfoResult.title;
+					}
+					else if(this.layerComb.selectedItem.@name =="爬梯" || this.layerComb.selectedItem.@name =="警示设施")
+					{
+						var info:Info = new Info;
+						map.infoWindow.content = info;
+						info.param ={layer:this.layerComb.selectedItem.@name,tbzh:queryInfoResult.title,servletcontext:this.servletcontext}
+					}
+					else if(this.layerComb.selectedItem.@name =="横断面")
+					{
+						var dMInfo:DMInfo = new DMInfo;
+						map.infoWindow.content = dMInfo;
+						dMInfo.param ={layer:this.layerComb.selectedItem.@name,tbzh:queryInfoResult.title,servletcontext:this.servletcontext}
+					}
+					
+					map.infoWindow.label = " " + this.layerComb.selectedItem.@name+":" + queryInfoResult.title;
+					map.infoWindow.show(queryInfoResult.geometry as MapPoint);
+				}
+				else
+				{
+					map.extent = queryInfoResult.geometry.extent;
+					
+					if (!map.extent.contains(queryInfoResult.geometry))
+					{
+						map.level--;
+					}
+				}
+			}
+			
+			private function mouseOverHandler(event:MouseEvent):void
+			{
+				var gra:Graphic = event.currentTarget as Graphic;
+				var queryInfoResult:QueryInfoResult = gra.attributes as QueryInfoResult;
+				if (queryInfoResult.geometry)
+				{
+					showInfo(queryInfoResult);
+					//					if (queryInfoResult.geometry.type == Geometry.MAPPOINT)
+					//					{
+					//						map.centerAt(queryInfoResult.geometry as MapPoint);
+					//					}
+				}
+			}
+			
+			/**
+			 * 
+			 * */
+			private function clickResult(event:Event):void
+			{
+				var queryInfoResult:QueryInfoResult  = ItemRenderer(event.target).data as QueryInfoResult;
+				if (queryInfoResult.geometry)
+				{
+					showInfo(queryInfoResult);
+					if (queryInfoResult.geometry.type == Geometry.MAPPOINT)
+					{
+						map.centerAt(queryInfoResult.geometry as MapPoint);
+					}
+				}
+			}
+			private function zoom(event:MouseEvent):void
+			{
+				graphicsLayer.clear();
+				if(ZBXT.selectedValue =="西安坐标")
+				{
+					numX.minValue = NaN;
+					numX.maxValue = NaN;
+					numY.minValue = NaN;
+					numY.maxValue = NaN;
+					var all:Array=Validator.validateAll([numX,numY]); 
+					if(all.length>0)
+					{ 
+						return;
+					} 
+					var point:MapPoint = new MapPoint;
+					point.x = Number(XZB.text);  
+					point.y = Number(YZB.text);
+					var gra:Graphic = new Graphic;
+					gra.geometry =point;
+					gra.symbol = new SimpleMarkerSymbol("circle",8,0xff0000);  //picturemarkersymobl
+					graphicsLayer.add(gra);
+					this.map.centerAt(point);
+				}
+				else if(ZBXT.selectedValue =="经纬坐标")
+				{  
+					numX.minValue = 113;
+					numX.maxValue = 115;
+					numX.lowerThanMinError = "输入坐标有误，广州经度范围为113°-115°之间";
+					numX.exceedsMaxError = "输入坐标有误，广州经度范围为113°-115°之间";
+					numY.minValue = 22;
+					numY.maxValue = 24;
+					numY.lowerThanMinError = "输入坐标有误，广州经度范围为22°-24°之间";
+					numY.exceedsMaxError = "输入坐标有误，广州经度范围为22°-24°之间";
+					var allval:Array=Validator.validateAll([numX,numY]); 
+					if(allval.length>0)
+					{ 
+						return;
+					} 
+					var mappoint:MapPoint = new MapPoint;
+					mappoint.x = Number(XZB.text);  
+					mappoint.y = Number(YZB.text);
+					mappoint.spatialReference = new SpatialReference(4326);
+					var spatialrefrence:SpatialReference = new SpatialReference(2383);
+					myGeometryService.project([mappoint],spatialrefrence,new AsyncResponder(onok,onerr))								
+				}
+				
+			}
+			
+			protected function onok(projectLastResult:Array,graphic:MapPoint):void
+			{
+				var newpoint:MapPoint = projectLastResult[0] as MapPoint;
+				
+				this.map.centerAt(newpoint);
+				
+				var gra:Graphic = new Graphic;
+				gra.geometry =newpoint;
+				gra.symbol = new SimpleMarkerSymbol("circle",8,0xff0000);  //picturemarkersymobl
+				graphicsLayer.add(gra);
+				
+				
+			}
+			protected function onerr(projectLastResult:Object,graphic:Geometry):void
+			{
+				
+			}
+			
+			/**
+			 * 重置
+			 * */
+			private function reset():void
+			{
+				TZBH.text = "";
+				queryInfoResultAC = null;
+				this.map.infoWindow.hide();
+				graphicsLayer.clear();
+			}
+			
+			private function XAchang():void
+			{
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>  
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->  
+		<s:RadioButtonGroup id="ZBXT" />
+		<esri:GeometryService id="myGeometryService" concurrency="last"   url="http://10.23.108.104:8399/ArcGIS/rest/services/Geometry/GeometryServer" />
+		<mx:NumberValidator id="numX" source="{XZB}" required="true" property="text" requiredFieldError="请输入X坐标"/>
+		<mx:NumberValidator id="numY" source="{YZB}" required="true" property="text" requiredFieldError="请输入Y坐标"/>
+	</fx:Declarations>
+	<viewer:WidgetTemplate id="wTemplate"
+						   width="375" height="265" closed="wTemplate_closedHandler(event)">
+		<s:HGroup id="main"
+				  width="100%" height="100%"
+				  visible="false"
+				  visible.main="true" horizontalAlign="center">
+			<mx:Tile width="100%" height="100%" horizontalGap="1">
+				<mx:Repeater id="fRepeater" dataProvider="{moduleAC}">
+					<components:WidgetButtonControl infoData="{fRepeater.currentItem}" click="clickMoudel(event)">
+						
+					</components:WidgetButtonControl>
+				</mx:Repeater>
+			</mx:Tile>
+		</s:HGroup>
+		<s:VGroup id="XXCX" width="100%" height="100%" visible="false" visible.SSCX="true">
+			<s:HGroup  verticalAlign="middle" paddingLeft="15">
+				<s:Label text="堤防设施"/>
+				<mx:ComboBox id="layerComb" labelField="@name" width="120"  height="23" fontFamily="宋体"/>
+			</s:HGroup>
+			<s:HGroup   verticalAlign="middle" paddingLeft="15">
+				<s:Label text="{layerComb.selectedItem.@aliasFieldName}"/>
+				<s:TextInput id="TZBH" width="120"  height="23"/> 
+				<s:Button label="查询" width="50" height="23" click="queryRecord(event)">
+				</s:Button>
+				<s:Button label="重置" width="50" height="23" click="reset()">
+				</s:Button>
+			</s:HGroup>
+			<mx:HRule width="100%" height="2" alpha="0.8" styleName="WidgetRule"/>
+			<s:Scroller width="100%" height="100%">
+				<Query:QueryResultDataGroup dataProvider="{queryInfoResultAC}" queryResultClick="clickResult(event)">
+					<Query:layout>
+						<s:VerticalLayout gap="2"
+										  horizontalAlign="justify"
+										  useVirtualLayout="true"/>
+					</Query:layout>
+				</Query:QueryResultDataGroup>
+			</s:Scroller>
+		</s:VGroup>
+		
+		<s:VGroup id="ZBDW" width="100%" height="100%" horizontalAlign="center" gap="12" verticalAlign="middle" visible.ZBDW="true" visible="false">
+			<s:HGroup>
+				<s:RadioButton label="经纬坐标" value="经纬坐标" group="{ZBXT}"  selected="true"/>	
+				<s:RadioButton label="西安坐标" value="西安坐标" group="{ZBXT}" change="XAchang()"/>
+				
+			</s:HGroup>
+			
+			<s:HGroup  verticalAlign="middle" width="180">
+				<s:Label text="x坐标:"/>
+				<s:TextInput id="XZB" text="" width="150"/> 
+			</s:HGroup>
+			<s:HGroup verticalAlign="middle" width="180">
+				<s:Label text="y坐标:"/>
+				<s:TextInput id="YZB" text=""   width="150"/>
+			</s:HGroup >
+			<s:HGroup verticalAlign="middle" width="180" horizontalAlign="right">
+				<mx:Button width="50" height="23" label="定位" click="zoom(event)"/>
+				
+				
+			</s:HGroup >
+		</s:VGroup>
+		<s:VGroup id="QYDW" width="100%" height="100%">
+			
+		</s:VGroup>
+		
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<!--
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright © 2008 - 2009 ESRI
+//
+// All rights reserved under the copyright laws of the United States.
+// You may freely redistribute and use this software, with or
+// without modification, provided you include the original copyright
+// and use restrictions.  See use restrictions in the file:
+// <install location>/FlexViewer/License.txt
+//
+////////////////////////////////////////////////////////////////////////////////
+-->
+<configuration>
+	<MODULEDATA>
+	    <module id = "1" title="设施查询" icon="assets/images/i_table.png" key="SSCX">true</module>
+	    <module id = "2" title="坐标定位" icon="assets/images/i_edit.png" key="ZBDW">true</module>	    
+		<module id = "3" title="区域定位" icon="assets/images/i_zoomprevious.png" key="QYDW">false</module>
+		<module id = "5" title="巡查统计" icon="assets/images/i_table.png" key="">false</module>
+	</MODULEDATA>
+	<QueryLayer>
+	    <layer name="排水口" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/0" aliasFieldName="统编桩号" field="TBZH"></layer>
+	    <layer name="爬梯" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/2" aliasFieldName="统编桩号" field="TBZH"></layer>
+	    <layer name="警示设施" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/3" aliasFieldName="统编桩号" field="TBZH"></layer>
+	    <layer name="横断面" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/5" aliasFieldName="统编桩号" field="TBZH"></layer>
+	    <layer name="水闸" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/1" aliasFieldName="水闸名称" field="name"></layer>
+	</QueryLayer>
+</configuration>

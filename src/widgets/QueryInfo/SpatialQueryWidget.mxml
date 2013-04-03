@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:viewer="com.esri.viewer.*" xmlns:Query="widgets.Query.*" xmlns:components="com.esri.viewer.components.*" layout="absolute"  widgetConfigLoaded="init()"                   x="600" y="300" xmlns:esri="http://www.esri.com/2008/ags"
+				   >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<esri:EditTool id="editTool" map="{map}"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.viewer.managers.ImageMedioInfo;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.QueryEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.managers.DMInfo;
+			import com.esri.viewer.managers.Info;
+			
+			import mx.collections.ArrayCollection;
+			
+			import spark.components.supportClasses.ItemRenderer;
+			// polygons
+			[Bindable]
+			private var drawPolygonLabel:String;
+			[Bindable]
+			private var drawFreehandPolygonLabel:String;
+			[Bindable]
+			private var drawRectangleLabel:String;
+			[Bindable]
+			private var drawCircleLabel:String;
+			[Bindable]
+			private var drawEllipseLabel:String;
+			[Bindable]
+			private var fillAlphaLabel:String;
+			[Bindable]
+			private var fillColorLabel:String;
+			[Bindable]
+			private var fillStyleLabel:String;
+			[Bindable]
+			private var fillOutlineColorLabel:String;
+			[Bindable]
+			private var fillOutlineWidthLabel:String;
+			private const ICON_URL:String = "assets/images/";
+			
+			private var graphicsLayer:GraphicsLayer = new GraphicsLayer;
+			private var pictureSymbol:PictureMarkerSymbol= new PictureMarkerSymbol("assets/images/i_pin.png",32,32,13,15);
+			private var servletcontext:String = "";
+			private function init():void
+			{
+				if (configXML)
+				{
+					drawPolygonLabel = configXML.labels.drawpolygonlabel || getDefaultString("drawPolygonLabel");
+					drawFreehandPolygonLabel = configXML.labels.drawfreehandpolygonlabel || getDefaultString("drawFreehandPolygonLabel");
+					drawRectangleLabel = configXML.labels.drawrectanglelabel || getDefaultString("drawRectangleLabel");
+					drawCircleLabel = configXML.labels.drawcirclelabel || getDefaultString("drawCircleLabel");
+					drawEllipseLabel = configXML.labels.drawellipselabel || getDefaultString("drawEllipseLabel");
+					fillAlphaLabel = configXML.labels.fillalphalabel || getDefaultString("fillAlphaLabel");
+					fillColorLabel = configXML.labels.fillcolorlabel || getDefaultString("fillColorLabel");
+					fillStyleLabel = configXML.labels.fillstylelabel || getDefaultString("fillStyleLabel");
+					fillOutlineColorLabel = configXML.labels.filloutlinecolorlabel || getDefaultString("fillOutlineColorLabel");
+					fillOutlineWidthLabel = configXML.labels.filloutlinewidthlabel || getDefaultString("fillOutlineWidthLabel");
+					
+					var layers:XMLList = configXML..layer;
+					for (var j:Number=0; j < layers.length(); j++)
+					{
+						layerComb.dataProvider = layers;
+					}
+				}
+				this.map.addLayer(graphicsLayer);
+				servletcontext = this.configData.configXML.servletcontext;
+			}
+			
+			protected function wTemplate_closedHandler(event:Event):void
+			{
+				graphicsLayer.clear();
+				this.map.infoWindow.hide();
+			}
+			
+			private var selectedDrawingIcon:Image;
+			private var drawType:String;
+			private var drawStatus:String;
+			
+			private function activateDrawTool(event:MouseEvent):void
+			{
+				var data:Object =
+					{
+						tool: "pan",
+						status: "平移"
+					}
+				AppEvent.dispatch(AppEvent.SET_MAP_NAVIGATION, data);
+//				addSharedData("Deactivate_DrawTool", null); // to be able to deactivate drawTool on other widgets
+				editTool.deactivate();
+//				lastActiveEditType = "none";
+				
+				// apply glow
+				selectedDrawingIcon = Image(event.currentTarget);
+//				clearSelectionFilter();
+//				selectedDrawingIcon.filters = [ glowFilter ];
+				
+//				showMeasurements = false;
+//				isEditing = false;
+				drawType = selectedDrawingIcon.name;
+				switch (drawType)
+				{
+					case DrawTool.EXTENT:
+					{
+//						drawingPolygon = true;
+//						showMeasurements = true;
+						
+						drawStatus = drawRectangleLabel;
+						setMapAction(drawType, drawStatus, null, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.CIRCLE:
+					{
+//						drawingPolygon = true;
+//						showMeasurements = true;
+						
+						drawStatus = drawCircleLabel;
+						setMapAction(drawType, drawStatus, null, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.ELLIPSE:
+					{
+//						addingText = drawingPoint = drawingLine = false;
+						
+						drawStatus = drawEllipseLabel;
+						setMapAction(drawType, drawStatus, null, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.POLYGON:
+					{
+						drawStatus = drawPolygonLabel;
+						setMapAction(drawType, drawStatus, null, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.FREEHAND_POLYGON:
+					{
+						
+						drawStatus = drawFreehandPolygonLabel;
+						setMapAction(drawType, drawStatus, null, map_drawEndHandler);
+						break;
+					}
+				}
+			}
+			
+			[Bindable]
+			private var queryInfoResultAC:ArrayCollection;
+			private function map_drawEndHandler(event:DrawEvent):void
+			{
+				queryInfoResultAC = null;
+				graphicsLayer.clear();
+				var queryTask:QueryTask = new QueryTask;
+				queryTask.url = this.layerComb.selectedItem.@layerid;
+				queryTask.addEventListener(QueryEvent.EXECUTE_COMPLETE,queryTaskHandler);
+				queryTask.useAMF = false;
+				var query:Query = new Query;
+				query.returnGeometry = true;
+				query.outFields = ["*"];
+				query.geometry = event.graphic.geometry;
+				queryTask.execute(query);
+			}
+			
+			private function queryTaskHandler(event:QueryEvent):void
+			{
+				if(event.featureSet!=null && event.featureSet.features.length>0)
+				{
+					queryInfoResultAC = new ArrayCollection;
+					for(var i:int = 0;i<event.featureSet.features.length;i++)
+					{
+						var queryInfoResult:QueryInfoResult = new QueryInfoResult();
+						queryInfoResult.title = event.featureSet.features[i].attributes[this.layerComb.selectedItem.@field];
+						queryInfoResult.icon = "assets/images/i_pin.png";
+						var gra:Graphic = new Graphic;
+						var pt:MapPoint = event.featureSet.features[i].geometry as MapPoint;
+						gra.geometry=pt;
+						gra.symbol = pictureSymbol;
+						queryInfoResult.point = pt;
+						queryInfoResult.symbol = pictureSymbol;
+						queryInfoResult.geometry = pt;
+						queryInfoResultAC.addItem(queryInfoResult); 
+						
+						gra.attributes = queryInfoResult;
+						gra.addEventListener(MouseEvent.MOUSE_OVER,mouseOverHandler);
+						graphicsLayer.add(gra);
+					}
+				}
+			}
+			
+			
+			private function drawIcon_rollOverHandler(event:MouseEvent):void
+			{
+//				clearSelectionFilter();
+//				event.target.filters = [ glowFilter ];
+			}
+			
+			private function drawIcon_rollOutHandler(event:MouseEvent):void
+			{
+//				clearSelectionFilter();
+			}
+			
+			private function clickResult(event:Event):void
+			{
+				var queryInfoResult:QueryInfoResult  = ItemRenderer(event.target).data as QueryInfoResult;
+				if (queryInfoResult.geometry)
+				{
+					showInfo(queryInfoResult);
+					if (queryInfoResult.geometry.type == Geometry.MAPPOINT)
+					{
+						map.centerAt(queryInfoResult.geometry as MapPoint);
+					}
+				}
+			}
+			
+			private function mouseOverHandler(event:MouseEvent):void
+			{
+				var gra:Graphic = event.currentTarget as Graphic;
+				var queryInfoResult:QueryInfoResult = gra.attributes as QueryInfoResult;
+				if (queryInfoResult.geometry)
+				{
+					showInfo(queryInfoResult);
+				}
+			}
+			
+			private function showInfo(queryInfoResult:QueryInfoResult):void
+			{
+				if (queryInfoResult.geometry.type == Geometry.MAPPOINT)
+				{
+					map.infoWindow.content = null;
+					if(this.layerComb.selectedItem.@name =="排水口")
+					{
+						
+						var imageMedioInfo:ImageMedioInfo = new ImageMedioInfo;
+						map.infoWindow.content = imageMedioInfo;
+						imageMedioInfo.TBZH = queryInfoResult.title;
+					}
+					else if(this.layerComb.selectedItem.@name =="爬梯" || this.layerComb.selectedItem.@name =="警示设施")
+					{
+						var info:Info = new Info;
+						map.infoWindow.content = info;
+						info.param ={layer:this.layerComb.selectedItem.@name,tbzh:queryInfoResult.title,servletcontext:this.servletcontext}
+					}
+					else if(this.layerComb.selectedItem.@name =="横断面")
+					{
+						var dMInfo:DMInfo = new DMInfo;
+						map.infoWindow.content = dMInfo;
+						dMInfo.param ={layer:this.layerComb.selectedItem.@name,tbzh:queryInfoResult.title,servletcontext:this.servletcontext}
+					}
+					
+					map.infoWindow.label = " " + this.layerComb.selectedItem.@name+":" + queryInfoResult.title;
+					map.infoWindow.show(queryInfoResult.geometry as MapPoint);
+				}
+				else
+				{
+					map.extent = queryInfoResult.geometry.extent;
+					
+					if (!map.extent.contains(queryInfoResult.geometry))
+					{
+						map.level--;
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+	<viewer:WidgetTemplate id="wTemplate"
+						   width="375" height="265" closed="wTemplate_closedHandler(event)">
+		<s:VGroup width="100%" height="100%"
+				  gap="2">
+			<s:HGroup  verticalAlign="middle" horizontalAlign="center" width="100%">
+				<s:Label text="堤防设施:"/>
+				<mx:ComboBox id="layerComb" labelField="@name" width="120"  height="23" fontFamily="宋体"/>
+			</s:HGroup>
+			<s:HGroup id="drawImageGroup"
+					  width="100%"
+					  gap="2"
+					  horizontalAlign="center">
+				<mx:Image name="{DrawTool.EXTENT}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_rect.png"
+						  toolTip="{drawRectangleLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.CIRCLE}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_circle.png"
+						  toolTip="{drawCircleLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.ELLIPSE}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_ellipse.png"
+						  toolTip="{drawEllipseLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.POLYGON}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_poly.png"
+						  toolTip="{drawPolygonLabel}"
+						  useHandCursor="true"/>
+				<mx:Image name="{DrawTool.FREEHAND_POLYGON}"
+						  width="40" height="40"
+						  buttonMode="true"
+						  click="activateDrawTool(event)"
+						  rollOut="drawIcon_rollOutHandler(event)"
+						  rollOver="drawIcon_rollOverHandler(event)"
+						  source="assets/images/i_draw_freepoly.png"
+						  toolTip="{drawFreehandPolygonLabel}"
+						  useHandCursor="true"/>
+			</s:HGroup>
+			<mx:HRule width="100%" height="2" alpha="0.8" styleName="WidgetRule"/>
+			<s:Scroller width="100%" height="100%">
+				<Query:QueryResultDataGroup dataProvider="{queryInfoResultAC}" queryResultClick="clickResult(event)">
+					<Query:layout>
+						<s:VerticalLayout gap="2"
+										  horizontalAlign="justify"
+										  useVirtualLayout="true"/>
+					</Query:layout>
+				</Query:QueryResultDataGroup>
+			</s:Scroller>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

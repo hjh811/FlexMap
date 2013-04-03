@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<!--
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright © 2008 - 2009 ESRI
+//
+// All rights reserved under the copyright laws of the United States.
+// You may freely redistribute and use this software, with or
+// without modification, provided you include the original copyright
+// and use restrictions.  See use restrictions in the file:
+// <install location>/FlexViewer/License.txt
+//
+////////////////////////////////////////////////////////////////////////////////
+-->
+<configuration>
+	<MODULEDATA>
+	    <module id = "1" title="查询监控" icon="assets/images/i_searchgraphical.png">true</module>
+	    <module id = "2" title="发送消息" icon="assets/images/i_edit.png">true</module>	    
+		<module id = "3" title="轨迹回放" icon="assets/images/i_zoomprevious.png">true</module>
+		<module id = "4" title="巡查上报" icon="assets/images/i_table.png">true</module>	 
+		<module id = "5" title="历史记录" icon="assets/images/i_bookmark3.png">true</module>	 
+		<module id = "6" title="巡查统计" icon="assets/images/statistics.png">true</module>
+		<module id = "7" title="人员管理" icon="assets/images/user_male.png">true</module>
+	</MODULEDATA>
+	<SERVICES>
+		<SERVICE name="sendmsgservice" url="http://10.23.97.247/androidpn/notification.do?action=send"></SERVICE> 
+	</SERVICES>
+	<Interval>30</Interval>  <!-- PDA超时 间隔 (单位:分钟) -->
+</configuration>

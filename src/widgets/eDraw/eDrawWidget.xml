@@ -1,0 +1,27 @@
+<?xml version="1.0" ?>
+<configuration>
+    <geometryservice>http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer</geometryservice>
+    <spatialref>102003</spatialref>
+    <distanceunits>
+        <distanceunit abbr="m" conversion="1">米</distanceunit>
+        <distanceunit abbr="km" conversion=".001">千米</distanceunit> 
+    </distanceunits>
+    <areaunits>
+        <areaunit abbr="sq m" conversion="1">平方米</areaunit>
+        <areaunit abbr="sq km" conversion="0.000001">平方千米</areaunit>
+      
+    </areaunits>
+   
+	<numericlabelprecision>2</numericlabelprecision>
+	<defaulttool>mappoint</defaulttool>
+	<labels>
+		<textrotationlabel>旋转</textrotationlabel>
+		<markerrotationlabel>角度</markerrotationlabel>
+		<pointunitslabel>点单位</pointunitslabel>
+		<savelabel>保存标绘</savelabel>
+		<openlabel>开始标绘</openlabel>
+		<showlabel>显示标绘</showlabel>
+		<tilabel>标题</tilabel>
+		<submitlabel>保存标绘</submitlabel>
+	</labels>
+</configuration>

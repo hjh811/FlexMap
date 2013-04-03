@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<configuration label="Bookmarks (example)">
+    <bookmarks>
+        <bookmark name="广州市范围">410951 2548907 444712 2564412</bookmark>
+    </bookmarks>
+</configuration>
+
+<!--
+    See Bookmark widget tag reference at
+    http://links.esri.com/bookmarkwidget
+-->

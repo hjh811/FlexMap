@@ -1,0 +1,1300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+///////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2010-2011 Esri. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at 
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+///////////////////////////////////////////////////////////////////////////
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+                   xmlns:s="library://ns.adobe.com/flex/spark"
+                   xmlns:mx="library://ns.adobe.com/flex/mx"
+                   xmlns:viewer="com.esri.viewer.*"
+                   layout="absolute"
+                   widgetConfigLoaded="init()"  xmlns:components="com.esri.viewer.components.*" xmlns:PDA="widgets.PDA.*">
+ 
+    <viewer:states>
+        <s:State name="main"/>
+        <s:State name="SSJK"/>
+        <s:State name="FSXX"/>
+        <s:State name="GZJL"/>
+        <s:State name="GJHF"/>
+        <s:State name="XCSB"/>
+        <s:State name="XCTJ"/>
+        <s:State name="RYGL"/> 
+    </viewer:states>
+
+    <viewer:transitions>
+        <s:Transition autoReverse="true" toState="*">
+            <s:Fade targets="{[main,SSJK,FSXX,GZJL,GJHF,XCSB,XCTJ,RYGL]}"/>
+        </s:Transition>
+    </viewer:transitions>
+    
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace viewer "com.esri.viewer.*";
+		@namespace components "com.esri.viewer.components.*";
+		@namespace PDA "widgets.PDA.*";
+		
+		global
+		{
+			font-family:"宋体";
+		}
+	</fx:Style>
+    <fx:Script>
+        <![CDATA[
+			import com.esri.ags.Graphic;
+			
+			import mx.utils.ObjectUtil;
+			
+			import com.esri.ags.events.MapMouseEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.effects.Move;
+			import mx.events.IndexChangedEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			
+			import spark.components.supportClasses.ItemRenderer;
+			import spark.effects.Move3D;
+
+            private const ICON_URL:String = "assets/images/";
+
+            //labels
+            private var bookmarksLabel:String;
+            private var addbookmarksLabel:String;
+            [Bindable]
+            private var addLabel:String;
+            [Bindable]
+            private var submitLabel:String;
+            private var errorLabel:String;
+
+			[Bindable]
+			private var moduleAC:ArrayCollection;
+
+            private var selectedindex:int = 0;
+			[Bindable]
+			private var pdaResultAC:ArrayCollection;
+			private var graphicsLayer:GraphicsLayer = new GraphicsLayer();
+			private var pictureSymbol:PictureMarkerSymbol= new PictureMarkerSymbol("assets/images/user_male.png",32,32);
+			
+			private var false_pictureSymbol:PictureMarkerSymbol= new PictureMarkerSymbol("assets/images/user_male_false.png",32,32);
+			private var servletcontext:String;
+			[Bindable]
+			private var xcNum:Number = 0;
+			[Bindable]
+			private var wzNum:Number = 0;
+			private var showtip:Boolean = false;
+			private var dateFormatter:DateFormatter=new DateFormatter();
+			
+            private function init():void
+            {
+                if (configXML)
+                {
+					var moduleList:XMLList=configXML..module;
+					moduleAC=new ArrayCollection();
+					for (var i:Number=0; i < moduleList.length(); i++)
+					{
+						var moduleid:String=moduleList[i].@id;
+						var icon:String=moduleList[i].@icon;
+						var title:String=moduleList[i].@title;
+						var display:String=moduleList[i];
+						
+						if (display == "true")
+						{
+							var modulemark:Object={icon: icon, title: title, display: display}
+							moduleAC.addItem(modulemark);
+						}
+					}
+					
+					servletcontext = this.configData.configXML.servletcontext;
+                }
+
+                addTitleBarButtons();
+				
+				this.map.addLayer(graphicsLayer);
+				
+				graphicsLayerDraw=new GraphicsLayer();
+				map.addLayer(graphicsLayerDraw);
+				
+				graphicsLayerPath=new GraphicsLayer();
+				map.addLayer(graphicsLayerPath);
+				
+				var httpservices:HTTPService = new HTTPService;
+				httpservices.url= servletcontext + "/phone/PDAServlet?o=getusers";
+				httpservices.method = "POST";
+				httpservices.addEventListener(ResultEvent.RESULT,getUsersHandler);
+				httpservices.send(null);
+				
+//				getSBData();
+//				getWZData();
+				timerHis=new Timer(2000);
+				timer=new Timer(40000);
+				timer.addEventListener(TimerEvent.TIMER, onTimer);
+				timerHis.addEventListener(TimerEvent.TIMER, onTimerHis);
+				
+				this.map.addEventListener(MapMouseEvent.MAP_CLICK,doubleclick);
+				
+				
+//				HTMLPopup.show(aboutContent, aboutButtonLabel, 400, 300);
+//				this.showInfoWindow(null);
+            }
+			
+			private function doubleclick(event:MapMouseEvent):void
+			{
+//				Alert.show(event.mapPoint.x + "," + event.mapPoint.y);
+			}
+			
+			private function onTimer(event:TimerEvent):void
+			{
+				var httpservices:HTTPService = new HTTPService;
+				httpservices.url= servletcontext + "/phone/PDAServlet?o=current";
+				httpservices.method = "POST";
+				httpservices.addEventListener(ResultEvent.RESULT,currentHandler);
+				httpservices.send(null);
+				
+				getSBData();
+				getWZData();
+			}
+			
+			private function getUsersHandler(event:ResultEvent):void
+			{
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				userSelected.dataProvider = jsonObject["values"] as Array;
+				pdausers.dataProvider = jsonObject["values"] as Array;
+			}
+
+            private function assignLabels():void
+            {
+            }
+
+            private function addTitleBarButtons():void
+            {
+                wTemplate.addTitlebarButton(ICON_URL + "i_home.png", "主菜单", showMain);
+                
+                wTemplate.addTitlebarButton(ICON_URL + "i_searchgraphical.png", "实时监控", showSSJK);
+                wTemplate.addTitlebarButton(ICON_URL + "i_edit.png", "发送消息", showFSXX);
+				wTemplate.addTitlebarButton(ICON_URL + "i_zoomprevious.png", "轨迹回放", showGJHF);
+//				wTemplate.addTitlebarButton(ICON_URL + "i_table.png", "巡查上报", showXCSB);
+				wTemplate.addTitlebarButton(ICON_URL + "i_bookmark3.png", "历史记录", showGZJL);
+				wTemplate.addTitlebarButton(ICON_URL + "statistics.png", "巡查统计", showXCTJ);
+				wTemplate.addTitlebarButton(ICON_URL + "user_male.png", "人员管理", showRYGL);
+            }
+
+            private function showMain():void
+            {
+                this.currentState = "main";
+                wTemplate.selectedTitlebarButtonIndex = 0; // used to indicate selected titlebar button when automatically switching state
+            }
+
+            private function showSSJK():void
+            {
+                this.currentState = "SSJK";
+				wTemplate.selectedTitlebarButtonIndex = 1;
+            }
+            private function showFSXX():void
+            {
+                this.currentState = "FSXX";
+				wTemplate.selectedTitlebarButtonIndex = 2;
+            }
+            private function showGZJL():void
+            {
+                this.currentState = "GZJL";
+				wTemplate.selectedTitlebarButtonIndex = 3;
+            }
+            private function showGJHF():void
+            {
+                this.currentState = "GJHF";
+				wTemplate.selectedTitlebarButtonIndex = 4;
+            }
+			
+			private function showXCTJ():void
+			{
+//				this.currentState = "XCTJ";
+//				wTemplate.selectedTitlebarButtonIndex = 6;
+				var xcstatisticWindow:XCStatisticWindow = PopUpManager.createPopUp(this.parentApplication.parent,XCStatisticWindow,true) as XCStatisticWindow;
+				xcstatisticWindow.servletContext = this.servletcontext;
+				PopUpManager.centerPopUp(xcstatisticWindow);
+			}
+			
+			private function showXCSB():void
+			{
+				this.currentState = "XCSB";
+				wTemplate.selectedTitlebarButtonIndex = 5;
+			}
+			
+			
+			//人员管理
+			private function showRYGL():void
+			{
+				this.currentState = "RYGL";
+				wTemplate.selectedTitlebarButtonIndex = 7;
+				
+				if(userDataGrid.dataProvider==null)
+				{
+				////获取所有人员
+					getAllusers();
+				}
+			}
+			
+			private function alluserResultHandler(event:ResultEvent):void
+			{
+				if(event.result==null) return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				if(userDataGrid!=null)
+					this.userDataGrid.dataProvider = jsonValues;
+			}
+			
+			private function clickMoudel(event:Event):void
+			{
+				var modulemark:Object=event.currentTarget.infoData;
+				if (modulemark.title == "查询监控")
+				{
+					showSSJK();
+				}
+				else if (modulemark.title == "发送消息")
+				{
+					showFSXX();
+				}
+//				else if (modulemark.title == "工作记录")
+//				{
+//					showGZJL();
+//				}
+				else if (modulemark.title == "轨迹回放")
+				{
+					showGJHF();
+				}
+				else if (modulemark.title == "巡查统计")
+				{
+					showXCTJ();
+				}
+				else if (modulemark.title == "巡查上报")
+				{
+					showXCSB();
+				}
+				else if (modulemark.title == "历史记录")
+				{
+					showGZJL();
+				}
+				else if (modulemark.title == "人员管理")
+				{
+					showRYGL();
+				}
+				
+			}
+
+            private function QueryNow(event:Event):void
+            {
+				if (timer.running == true)
+					timer.stop();
+				
+				var InfoArray:Array=new Array();
+				var i:int;
+				for (i=0; i < map.numChildren; i++)
+				{
+					if (map.getChildAt(i).name.substr(0, 3).toUpperCase() == "PDA")
+					{
+						InfoArray.push(map.getChildAt(i));
+					}
+				}
+				
+				for (i=0; i < InfoArray.length; i++)
+				{
+					map.removeChild(InfoArray[i]);
+				}
+				InfoArray=null;
+				
+//				graClick=null;
+				timerRunning=true;
+				timer.start();
+				
+				showtip = this.isshowtip.selected;
+				var httpservices:HTTPService = new HTTPService;
+				httpservices.url= servletcontext + "/phone/PDAServlet?o=current";
+				httpservices.method = "POST";
+				httpservices.addEventListener(ResultEvent.RESULT,currentHandler);
+				httpservices.send(null);
+            }
+			
+			private function currentHandler(event:ResultEvent):void
+			{
+				graphicsLayer.clear();
+				var InfoArray:Array=new Array();
+				var i:int;
+				for (i=0; i < map.numChildren; i++)
+				{
+					if (map.getChildAt(i).name.substr(0, 3).toUpperCase() == "PDA")
+					{
+						InfoArray.push(map.getChildAt(i));
+					}
+				}
+				for (i=0; i < InfoArray.length; i++)
+				{
+					map.removeChild(InfoArray[i]);
+				}
+				InfoArray=null;
+				
+				pdaResultAC =new ArrayCollection;
+				if(event.result.toString()==null || event.result.toString() == "") return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				
+				var jsonValues:Array = jsonObject["values"] as Array;
+				if(jsonValues==null) return; 
+				var colunms:Array = new Array;
+				for(var i:int = 0;i<jsonValues.length;i++)
+				{
+					var realname:String = jsonValues[i].realname as String;
+					var logintime:String = jsonValues[i].createtime as String;
+					var x:Number = Number(jsonValues[i].x) -116.647;   //线性纠正
+					var y:Number = Number(jsonValues[i].y)-11.425;
+					var symbol:PictureMarkerSymbol = pictureSymbol;
+					var pdaResult:PDAResult = new PDAResult();
+					if(isOverTime(logintime,""))
+					{
+						symbol = this.false_pictureSymbol;
+						pdaResultAC.addItem(pdaResult); 
+					}
+					else
+					{
+						pdaResultAC.addItemAt(pdaResult,0);
+					}
+					
+					pdaResult.title = realname;
+					pdaResult.content = ""+ logintime;
+					pdaResult.icon = "assets/images/user_male.png";
+					var gra:Graphic = new Graphic;
+					var pt:MapPoint = new MapPoint(x,y,this.map.spatialReference);
+					gra.geometry=pt;
+					gra.symbol = symbol;
+					gra.attributes = pdaResult;
+					
+					pdaResult.point = pt;
+					pdaResult.symbol = symbol;
+					pdaResult.geometry = pt;
+					
+					
+					if(showtip && !isOverTime(logintime,""))
+					{
+						var infoPupop:PDAInfoPopup = new PDAInfoPopup;
+						infoPupop.map = this.map;
+						infoPupop.name="PDA" + pdaResult.title;
+						this.map.addChild(infoPupop);
+
+						infoPupop.infoData = pdaResult;
+					}
+					gra.addEventListener(MouseEvent.CLICK,graClickHandler);
+					graphicsLayer.add(gra);
+				}
+			}
+			
+			
+			//点击显示提示
+			private function graClickHandler(event:MouseEvent):void
+			{
+				var gra:Graphic = event.currentTarget as Graphic;
+				var pdaResult:PDAResult = gra.attributes as PDAResult;
+				
+				var infoPupop:PDAInfoPopup = new PDAInfoPopup;
+				infoPupop.map = this.map;
+				infoPupop.name="PDA" + pdaResult.title;
+				this.map.addChild(infoPupop);
+				infoPupop.infoData = pdaResult;
+			}
+			
+			
+			private function isOverTime(time:String, nowTime:String):Boolean
+			{
+				var result:Boolean=true;
+				var today:Date=new Date();
+				dateFormatter.formatString="YYYY-MM-DD JJ:NN:SS";
+				
+				nowTime=dateFormatter.format(today);
+				var date:String=nowTime.split(" ")[0];
+				var hour:Number=nowTime.split(" ")[1].toString().split(":")[0];
+				var minute:Number=nowTime.split(" ")[1].toString().split(":")[1];
+				
+				var array:Array=time.split(" ");
+				if (array[0] == date) //日期相同
+				{
+					var hourAndMinute:Array=array[1].toString().split(":");
+					if ((hour - Number(hourAndMinute[0])) == 0) //小时相同
+					{
+						if ((minute - Number(hourAndMinute[1])) < 10) //小于30分钟不超时
+							result=false;
+						
+					}
+					else if ((hour - Number(hourAndMinute[0])) == 1) //小时相差一个小时
+					{
+						if ((minute + 60 - Number(hourAndMinute[1])) < 10)
+							result=false;
+					}
+				}
+				
+				return result;
+			}
+			
+			private function clickResult(event:Event):void
+			{
+				var pdaResult:PDAResult = ItemRenderer(event.target).data as PDAResult;
+				if (pdaResult.geometry)
+				{
+					if (pdaResult.geometry.type == Geometry.MAPPOINT)
+					{
+//						if (map.scale > zoomScale)
+//						{
+//							map.scale = zoomScale;
+//						}
+						map.centerAt(pdaResult.geometry as MapPoint);
+						map.scale = 10000;
+					}
+					else
+					{
+						map.extent = pdaResult.geometry.extent;
+						
+						if (!map.extent.contains(pdaResult.geometry))
+						{
+							map.level--;
+						}
+					}
+				}
+//				clearTimeout(hitimer);
+//				hitimer = setTimeout(showHighlight, 300, [ pdaResult ]);
+			}
+			
+			private function showHighlight(params:Array):void
+			{
+//				var showHighlightPoint:MapPoint = params[0].geometry as MapPoint;
+//				var linkAlias:String = params[0].linkAlias;
+				
+//				popUpRenderer.popUpInfo = configurePopUpInfo(params[0].graphic.attributes.link, linkAlias);
+//				popUpRenderer.graphic = params[0].graphic;
+				
+//				map.infoWindow.content = popUpRenderer;
+//				map.infoWindow.contentOwner = popUpRenderer.graphic;
+//				map.infoWindow.show(showHighlightPoint);
+			}
+			
+			private function Cancel(event:Event):void
+			{
+				pdaResultAC = null;
+				graphicsLayer.clear();
+				var InfoArray:Array=new Array();
+				var i:int;
+				for (i=0; i < map.numChildren; i++)
+				{
+					if (map.getChildAt(i).name.substr(0, 3).toUpperCase() == "PDA")
+					{
+						InfoArray.push(map.getChildAt(i));
+					}
+				}
+				for (i=0; i < InfoArray.length; i++)
+				{
+					map.removeChild(InfoArray[i]);
+				}
+				InfoArray=null;
+			}
+
+			
+			[Bindable]
+			private var startDate:String;
+			[Bindable]
+			private var endDate:String;
+			private var hisPathAC:Array;
+			//轨迹图层 
+			private var graphicsLayerPath:GraphicsLayer;
+			//轨迹图标图层
+			private var graphicsLayerDraw:GraphicsLayer;
+			/**
+			 * 
+			 * 轨迹回放
+			 *
+			 **/
+			private function onBtnQueryHisHandler(event:MouseEvent):void
+			{
+				if (userSelected.text == "")
+				{
+					Alert.show("请选择用户！");
+					return;
+				}
+				if (this.dateField1.text != "" && this.dateField2.text != "")
+				{
+					startDate=this.dateField1.text;
+					endDate=this.dateField2.text;
+					
+					if(startDate>endDate)
+					{
+						Alert.show("开始时间大于结束时间，请重新输入！");
+						return;
+					}
+					var startDate_H:Number=this.hourStart.value;
+					var startDate_M:Number=this.minStart.value;
+					var startDate_S:Number=this.sceStart.value;
+					
+					var endDate_H:Number=this.hourEnd.value;
+					var endDate_M:Number=this.minEnd.value;
+					var endDate_S:Number=this.sceEnd.value;
+					
+					var startDate_HStr:String=startDate_H.toString();
+					var startDate_MStr:String=startDate_M.toString();
+					var startDate_SStr:String=startDate_S.toString();
+					var endDate_HStr:String=endDate_H.toString();
+					var endDate_MStr:String=endDate_M.toString();
+					var endDate_SStr:String=endDate_S.toString();
+					if (startDate_H.toString().length == 1)
+						startDate_HStr="0" + startDate_H.toString();
+					if (startDate_M.toString().length == 1)
+						startDate_MStr="0" + startDate_M.toString();
+					if (startDate_S.toString().length == 1)
+						startDate_SStr="0" + startDate_S.toString();
+					
+					if (endDate_H.toString().length == 1)
+						endDate_HStr="0" + endDate_H.toString();
+					if (endDate_M.toString().length == 1)
+						endDate_MStr="0" + endDate_M.toString();
+					if (endDate_S.toString().length == 1)
+						endDate_SStr="0" + endDate_S.toString();
+					
+					startDate=startDate + " " + startDate_HStr + ":" + startDate_MStr + ":" + startDate_SStr;
+					endDate=endDate + " " + endDate_HStr + ":" + endDate_MStr + ":" + endDate_SStr;
+					CursorManager.setBusyCursor();
+					
+					
+					var httpservices:HTTPService = new HTTPService;
+					var userid:String = this.userSelected.selectedItem.userid as String;
+					httpservices.url= servletcontext+ "/phone/PDAServlet?o=gethis&userid=" + userid + "&starttime=" + startDate + "&endtime=" + endDate;
+					httpservices.method = "POST";
+					httpservices.addEventListener(ResultEvent.RESULT,getHistoryHandler);
+					httpservices.send(null);
+				}
+				else
+				{
+					Alert.show("请选择时间段！");
+				}
+			}
+			 
+			private var hisPath:Boolean=false;
+			private var carCount:int=0;
+			private var bCarCatch:Boolean=true;
+			private var ihisCount:Number;
+			[Bindable]
+			private var trackBool:Boolean=true;
+			private var zoomScale:Number=5000;
+			private var timer:Timer;
+			private var dataArray:Array;
+			private var timerHis:Timer;
+			[Bindable]
+			private var obj:Array; //绑定用户、记录数、当前记录等相关信息
+			private var graMove:Graphic;
+			private var timerRunning:Boolean=false;
+			
+			private function getHistoryHandler(event:ResultEvent):void
+			{
+				try
+				{
+					var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+					var jsonValues:Array = jsonObject["values"] as Array;
+					if(jsonValues==null && jsonValues.length==0) 
+					{
+						Alert.show("无历史记录");
+						return; 
+					}
+					
+					var dateDictionary:Dictionary = new Dictionary;
+					
+//					hisPathAC=new Array();
+					dataArray=null; //清空数组
+					dataArray=new Array();
+					var iCount:Number=0;
+					var carCode:String;
+					var gpsTime:String;
+					var state:String;
+					var Longitude:String;
+					var Latitude:String;
+					var satellitecount:String;
+					var sTime:String;
+					var eTime:String;
+					
+					var pointArray:Array;   //按日期放置点数据
+					var dateArray:Array = new Array;  //存放所有日期
+					
+					for (var m:int=0; m <= jsonValues.length - 1; m++)
+					{
+						gpsTime=jsonValues[m].createtime;
+						
+						var dateTime:String = gpsTime.split(" ")[0];   //获取日期
+						if(dateDictionary[dateTime] == null) 
+						{
+							pointArray = new Array;
+							dateDictionary[dateTime] = pointArray;
+							dateArray.push(dateTime);
+						}
+						else
+						{
+							pointArray = dateDictionary[dateTime];
+						}
+						
+						carCode=jsonValues[m].userid;
+						Longitude=jsonValues[m].x;
+						Latitude=jsonValues[m].y;
+						var hisPt:MapPoint=new MapPoint();
+//						hisPt.x=Number(Longitude);
+//						hisPt.y=Number(Latitude);
+						hisPt.x=Number(Longitude) -116.647;
+						hisPt.y=Number(Latitude) -11.425;
+//						hisPt.time = gpsTime;
+//						hisPathAC.push(hisPt);
+//						dataArray.push({time: gpsTime, x: Longitude, y: Latitude, satellitecount: satellitecount});
+						
+						pointArray.push({pt:hisPt,time:gpsTime});
+						
+//						if (iCount == 0)
+//						{
+//							sTime=gpsTime;
+//						}
+//						iCount++;
+					}
+//					eTime=gpsTime;
+					
+//					obj=[{"用户名": this.userSelected.text, "记录数": iCount.toString(), nowRecord: 0}];
+					obj = new Array;
+					for each(var key:String in dateArray)
+					{
+						obj.push({"日期": key, "记录数": dateDictionary[key].length, nowRecord: 0,pointArray:dateDictionary[key]});
+					}
+//					this.resoultData.dataProvider=obj;
+					CursorManager.removeBusyCursor();
+				}
+				catch (error:Error)
+				{
+					CursorManager.removeBusyCursor();
+				}
+			}
+			
+			/**
+			 * 定时器历史轨迹回放
+			 * */
+			private function onTimerHis(event:TimerEvent):void
+			{
+				if (ihisCount < hisPathAC.length)
+				{
+					var lineSym:SimpleLineSymbol;
+					lineSym=new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0x0000ff, 0.6, 5);
+					
+					var hisPt:MapPoint=hisPathAC[ihisCount].pt as MapPoint;
+					var xpos:Number;
+					var ypos:Number;
+					var array:Array=new Array();
+					var pt:MapPoint=new MapPoint();
+					if (ihisCount == 0)
+					{
+						graMove.geometry=hisPt;
+					}
+					else
+					{
+						pt=graMove.geometry as MapPoint;
+						xpos=pt.x;
+						ypos=pt.y;
+						graMove.geometry=hisPt;
+						
+						var polyline:Polyline=new Polyline();
+						var ptStart:MapPoint=new MapPoint();
+						ptStart.x=xpos;
+						ptStart.y=ypos;
+						//						if (Math.sqrt((ptStart.x - hisPt.x) * (ptStart.x - hisPt.x) + (ptStart.y - hisPt.y) * (ptStart.y - hisPt.y)) > 10)
+						//						{
+						//							trackBool = true;
+						array.push(ptStart, hisPt);
+						polyline.addPath(array);
+						
+						var geom:Geometry=polyline as Geometry;
+						var graLine:Graphic=new Graphic(geom);
+						graLine.symbol=lineSym;
+						graphicsLayerPath.add(graLine);
+						graphicsLayerPath.refresh();
+						//						}else{
+						//							trackBool = false;
+						//						}
+						/***************************************************************/
+					}
+					graphicsLayerDraw.refresh();
+					
+					if (trackBool == true)
+					{
+						map.centerAt(hisPt);
+					}
+					
+					ihisCount=ihisCount + 1;
+					m_currentSelectedHis.nowRecord=ihisCount; //显示回放的当前记录
+//					this.resoultData.dataProvider=obj;
+					this.resoultData.invalidateList();
+				}
+				else
+				{
+					if (timerRunning == true)
+					{
+						timer.start();
+					}
+					this.btnback.label="回放";
+					hisPath=false;
+					timerHis.stop();
+					this.alpha = 0.9;
+				}
+			}
+
+			protected function wTemplate_closedHandler(event:Event):void
+			{
+				this.alpha = 0.9;
+				graphicsLayer.clear();
+				graphicsLayerDraw.clear();
+				graphicsLayerPath.clear();
+				timerHis.stop();
+				timer.stop();
+				pdaResultAC = null;
+				this.btnback.label="回放";
+				timerRunning=false;
+				var InfoArray:Array=new Array();
+				var i:int;
+				for (i=0; i < map.numChildren; i++)
+				{
+					if (map.getChildAt(i).name.substr(0, 3).toUpperCase() == "PDA")
+					{
+						InfoArray.push(map.getChildAt(i));
+					}
+				}
+				for (i=0; i < InfoArray.length; i++)
+				{
+					map.removeChild(InfoArray[i]);
+				}
+				InfoArray=null;
+			}
+
+			private var graphicPointSym:PictureMarkerSymbol=new PictureMarkerSymbol("assets/images/i_demographics.png", 32, 32);
+			private var m_currentSelectedHis:Object = null;
+			private function onBackHandler(event:MouseEvent):void
+			{
+				if(hisPath)  //正在回放
+				{
+					if (timerRunning == true)
+					{
+						timer.start();
+					}
+					this.alpha = 0.9;
+					timerHis.stop();
+					hisPath=false;
+					this.btnback.label="回放";
+					m_currentSelectedHis = null;
+					return;
+				}
+				if(resoultData.selectedItem==null)  
+				{
+					Alert.show("请选择列表中的回放记录");
+					return;
+				}
+				m_currentSelectedHis = resoultData.selectedItem;
+				hisPathAC = m_currentSelectedHis.pointArray;
+				if (hisPathAC != null && hisPathAC.length != 0)
+				{
+					this.alpha = 0.4;
+					graphicsLayerPath.clear();
+					graphicsLayerDraw.clear();
+					
+					graMove=null;
+					//clearMessage();
+//					this.showInfoWindow(null);
+					timer.stop();
+					bCarCatch=false;
+					//this.wRepeater.dataProvider=null;
+					
+					hisPath=!hisPath;
+					ihisCount=0;
+					if (hisPath)
+					{
+						timer.stop();
+						graphicsLayerDraw.clear();
+						var icon:String="assets/images/i_demographics.png";
+						var pdaPoint:MapPoint=hisPathAC[0].pt as MapPoint;
+						var gra:Graphic=new Graphic();
+						gra.geometry=pdaPoint as Geometry;
+						gra.name=this.userSelected.text;
+						//graphicPointSym=new PictureMarkerSymbol(icon, 30, 30);
+						gra.symbol=graphicPointSym;
+						graphicsLayerDraw.add(gra);
+						graMove=gra;
+						
+						graphicsLayerPath.clear();
+						//clearMessage();
+						
+						timerHis.start();
+						this.btnback.label="停止";
+						
+					}
+				}
+				else
+				{
+					Alert.show("无GPS轨迹!");
+				}
+				
+			}
+			
+			private function clickTrack(event:MouseEvent):void
+			{
+				trackBool=this.chkTrack.selected;
+//				if(this.pdaWindow!=null)
+//				{
+////					pdaWindow.canMapCenter = !trackBool;
+//				}
+			}
+
+			protected function btnSend_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				var userObj:Object = this.pdausers.selectedItem;
+				var httpSendMSG:HTTPService = new HTTPService;
+				httpSendMSG.url= "http://10.23.97.247/androidpn/notification.do?action=send";
+				httpSendMSG.method = "POST";
+				httpSendMSG.addEventListener(ResultEvent.RESULT, sendHander);
+				var paramOjb:Object = new Object;
+				paramOjb.broadcast = "N";
+				paramOjb.username = userObj["loginname"];
+				paramOjb.title = msgtitle.text;
+				paramOjb.message = sendMgs.text;
+				paramOjb.uri = "";
+				httpSendMSG.send(paramOjb);
+			}
+			
+			private function sendHander(event:ResultEvent):void
+			{
+				Alert.show("发送成功");
+			}
+
+
+			protected function tabnavigator1_changeHandler(event:IndexChangedEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(event.newIndex == 1)
+				{
+					getWZData();
+				}
+				else
+				{
+					getSBData();
+				}
+				
+			}
+
+
+			protected function getSBData():void
+			{
+				// TODO Auto-generated method stub
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url = servletcontext + "/gis/StatisticServlet";
+				httpservice.addEventListener(ResultEvent.RESULT,resultHandler);
+				httpservice.method = "POST";
+				var param:Object = new Object;
+				param.s = "select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.isnew = 1 and t1.userid = t2.id order by sbsy desc";
+				httpservice.send(param);
+			}
+			
+			private function getWZData():void
+			{
+				var http:HTTPService = new HTTPService;
+				http.url = servletcontext + "/gis/StatisticServlet";
+				http.addEventListener(ResultEvent.RESULT,wzResultHandler);
+				http.method = "POST";
+				var p:Object = new Object;
+				p.s = "select 'wz' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd, t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.isnew = 1 and t1.userid = t2.id order by sbsy desc";
+				http.send(p);
+			}
+			
+			private function resultHandler(event:ResultEvent):void
+			{
+				if(event.result==null) return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				xcNum = jsonValues.length;
+				if(rcDataGrid!=null)
+				this.rcDataGrid.dataProvider = jsonValues;
+			}
+			
+			private function wzResultHandler(event:ResultEvent):void
+			{
+				if(event.result==null) return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				wzNum = jsonValues.length;
+				if(wzDataGrid!=null)
+				this.wzDataGrid.dataProvider = jsonValues;
+			}
+
+			//双击详细表单
+			protected function resoultData_doubleClickHandler(event:MouseEvent):void
+			{
+				var grid:DataGrid = event.currentTarget as DataGrid;
+				// TODO Auto-generated method stub
+				if(grid.selectedItem == null) return;
+				var form:RCSBFormWindow =PopUpManager.createPopUp(this.parentApplication.parent,RCSBFormWindow,false) as RCSBFormWindow;
+				form.servletContent = this.servletcontext;
+				form.progressid = grid.selectedItem;
+				form.isreadonly = true;
+//				form.addEventListener("NEWCLOSE", closeHandler);
+				PopUpManager.centerPopUp(form);
+			}
+			
+			private function closeHandler(event:Event):void
+			{
+				getSBData();
+				getWZData();
+				Alert.show("发送成功");
+				
+			}
+
+
+			protected function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				getSBData();
+				getWZData();
+			}
+			
+			public function showdetail():void
+			{
+				if(this.resoultData.selectedItem!=null)
+				{
+					var move:Move = new Move;
+					move.xTo = 50;
+					move.yTo = 50;
+					var coorInfo:CoorInfoWindow;
+					coorInfo = PopUpManager.createPopUp(this.parentApplication.parent,CoorInfoWindow,false) as CoorInfoWindow;
+					PopUpManager.centerPopUp(coorInfo);
+					coorInfo.info = this.resoultData.selectedItem.pointArray;
+					coorInfo.map = this.map;
+					move.play([coorInfo]);
+				}
+				else
+				{
+					Alert.show("请在列表中选择要查看的详细记录");
+				}
+			}
+			
+			private function getAllusers():void
+			{
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url = this.servletcontext + "/gis/StatisticServlet";
+				httpservice.addEventListener(ResultEvent.RESULT,alluserResultHandler);
+				httpservice.method = "POST";
+				var p:Object = new Object;
+				p.s = "select id,loginname,realname,mobile,sex,phone,address,email,xcfwqd,xcfwzd from view_gps_alluser";
+				httpservice.send(p);
+			}
+
+
+			protected function userDataGrid_doubleClickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(this.userDataGrid.selectedItem!=null)
+				{
+					var userWindow:PDAUserInfoEdit = null;
+					userWindow = PopUpManager.createPopUp(this.parentApplication.parent,PDAUserInfoEdit,true) as PDAUserInfoEdit;
+					userWindow.userInfo = ObjectUtil.copy(this.userDataGrid.selectedItem as Object);
+					userWindow.servletcontext = this.servletcontext;
+					PopUpManager.centerPopUp(userWindow);
+				}
+			}
+			
+			private function edit():void
+			{
+				if(this.userDataGrid.selectedItem!=null)
+				{
+					var userWindow:PDAUserInfoEdit = null;
+					userWindow = PopUpManager.createPopUp(this.parentApplication.parent,PDAUserInfoEdit,true) as PDAUserInfoEdit;
+					userWindow.userInfo =  ObjectUtil.copy(this.userDataGrid.selectedItem as Object);
+					userWindow.servletcontext = this.servletcontext;
+					userWindow.addEventListener("NEWCLOSE", UserEditCloseHandler);
+					PopUpManager.centerPopUp(userWindow);
+				}
+			}
+			
+			private function UserEditCloseHandler(event:Event):void
+			{
+				getAllusers();
+			}
+
+			private function queryHistoryRecord():void
+			{
+				var sDate:String = queryStartDate.text;
+				var eDate:String = queryEndDate.text;
+				if(sDate=="" || eDate=="")
+				{
+					Alert.show("请填写时间");
+					return;
+				}
+				else if(sDate>eDate)
+				{
+					Alert.show("开始时间大于结束时间，请重新输入");
+					return;
+				}
+				var http:HTTPService = new HTTPService;
+				http.url = servletcontext + "/gis/StatisticServlet";
+				http.addEventListener(ResultEvent.RESULT,QueryResultHandler);
+				http.method = "POST";
+				var p:Object = new Object;
+				if(typeComb.selectedItem.toString() == "巡查上报")
+					p.s = "select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc";
+				else
+					p.s = "select 'wz' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd, t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc";
+				http.send(p);
+				
+			}
+			
+			private function QueryResultHandler(event:ResultEvent):void
+			{
+				if(event.result==null) return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				if(rcDataGrid!=null)
+					this.queryDataGrid.dataProvider = jsonValues;
+			}
+			
+			private function resetQuery():void
+			{
+				queryStartDate.text ="";
+				queryEndDate.text ="";
+				this.queryDataGrid.dataProvider = null;
+			}
+        ]]>
+    </fx:Script>
+    <fx:Declarations>
+		<s:Move3D id="moveEffect"
+				  xFrom="-100" xTo="100" xBy="400" 
+				  zFrom="-100" zBy="200" zTo="0"
+				  repeatBehavior="reverse" />
+	</fx:Declarations>
+    <viewer:WidgetTemplate id="wTemplate"
+                           width="375" height="365" closed="wTemplate_closedHandler(event)">
+
+        <s:HGroup id="main"
+                 width="100%" height="100%"
+                 visible="false"
+                 visible.main="true" horizontalAlign="center">
+			<mx:Tile width="100%" height="100%" horizontalGap="1">
+				<mx:Repeater id="fRepeater" dataProvider="{moduleAC}">
+					<components:WidgetButtonControl infoData="{fRepeater.currentItem}" click="clickMoudel(event)">
+						
+					</components:WidgetButtonControl>
+				</mx:Repeater>
+			</mx:Tile>
+        </s:HGroup>
+        <s:VGroup id="SSJK"
+                 width="100%" height="100%"
+                 visible="false"
+                 visible.SSJK="true" gap="2">
+			<mx:HBox width="100%">
+				<mx:Button label="监控" fontSize="12" width="50" height="23" click="QueryNow(event)"/>
+				<mx:Button label="取消" fontSize="12" width="50" height="23" click="Cancel(event)"/>
+				<mx:CheckBox id="isshowtip" label="显示提示框" selected="false"/>
+				<mx:HBox id="boxMessage" width="100%" horizontalAlign="center" >
+					<mx:SWFLoader id="swfMessage" source="assets/images/loader.swf" visible="false"/>
+					<mx:Text id="txtMessage" text="" styleName="WidgetText" horizontalCenter="0" width="90%"/>
+				</mx:HBox>
+				
+			</mx:HBox>
+
+			<mx:HRule width="100%" height="2" alpha="0.8" styleName="WidgetRule"/>
+			<s:Scroller width="100%" height="100%">
+					<PDA:PDAResultDataGroup dataProvider="{pdaResultAC}" searchResultClick="clickResult(event)"
+												  >
+						<PDA:layout>
+							<s:VerticalLayout gap="2"
+											  horizontalAlign="justify"
+											  useVirtualLayout="true"/>
+						</PDA:layout>
+					</PDA:PDAResultDataGroup>
+			 </s:Scroller>
+        </s:VGroup>
+        <s:VGroup id="FSXX"
+                 width="100%" height="100%"
+                 visible="false"
+                 visible.FSXX="true" gap="2">
+			<mx:HBox width="100%" height="28">
+				<mx:Label text="选择人员"/>
+				<mx:ComboBox id="pdausers" width="150" styleName="WidgetText" labelField="realname"/>
+			</mx:HBox>
+			<s:VGroup width="100%" height="100%" gap="5">
+				<mx:Label text="标题"/>
+				<mx:TextInput text="信息提醒" width="100%" id="msgtitle"/>
+				<mx:Label text="内容"/>
+				<mx:TextArea id="sendMgs" width="100%" height="70" styleName="InfoText" height.FSXX="142"/>
+				<mx:Button id="btnSend" label="发送" width="100" click="btnSend_clickHandler(event)" width.FSXX="78"/>
+				<mx:Text id="Message" text="" width="50%" fontSize="12" fontWeight="bold" visible="false"/>
+			</s:VGroup>
+        </s:VGroup>
+        <s:Group id="GZJL"
+                 width="100%" height="100%"
+                 visible="false"
+                 visible.GZJL="true">
+			<s:VGroup width="100%" height="100%">
+				<s:HGroup width="100%" verticalAlign="middle">
+					<mx:ComboBox id="typeComb" width="80">
+						<mx:dataProvider>
+							<fx:Array>
+								<fx:String>巡查上报</fx:String>
+								<fx:String>违章上报</fx:String>
+							</fx:Array>							
+						</mx:dataProvider>
+					</mx:ComboBox>
+					<s:Label text="时间:"/>
+					<mx:DateField id="queryStartDate" yearNavigationEnabled="true" showToday="true" width="90" formatString="YYYY-MM-DD"/>
+					<s:Label text="至"/>
+					<mx:DateField id="queryEndDate" yearNavigationEnabled="true" showToday="true" width="90" formatString="YYYY-MM-DD"/>
+				</s:HGroup>
+				<s:HGroup>
+					<s:Button label="查询" width="80" click="queryHistoryRecord()"/>
+					<s:Button label="重置" width="80" click="resetQuery()"/>
+				</s:HGroup>
+				<mx:DataGrid id="queryDataGrid" width="100%" height="100%" doubleClick="resoultData_doubleClickHandler(event)" doubleClickEnabled="true" >
+					<mx:columns>
+						<mx:DataGridColumn headerText="编号" dataField="bh"/>
+						<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
+						<mx:DataGridColumn headerText="发送时间" dataField="sbsy"/>
+						<mx:DataGridColumn headerText="巡查员" dataField="xdy"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</s:VGroup>
+        </s:Group>
+        <s:VGroup id="GJHF"
+                 width="100%" height="100%"
+                 visible="false"
+                 visible.GJHF="true" gap="2">
+			<mx:HBox width="100%" horizontalGap="0">
+				<mx:Label text="选择人员" styleName="InfoText"/>
+				<mx:ComboBox id="userSelected" width="105" labelField="realname"/>
+			</mx:HBox>
+			<mx:HRule width="100%" height="2" alpha="0.4" styleName="WidgetRule"/>
+			<mx:VBox width="100%">
+				<mx:HBox width="100%" height="100%" horizontalGap="0">
+					<mx:Label text="开始时间" styleName="InfoText"/>
+					<mx:DateField id="dateField1" yearNavigationEnabled="true" showToday="true" width="90" formatString="YYYY-MM-DD" selectedDate="{new Date()}"/>
+					<mx:NumericStepper id="hourStart" width="45" maximum="23" minimum="0" value="0"/>
+					<mx:Label text="点" width="15" styleName="InfoText"/>
+					<mx:NumericStepper id="minStart" width="45" maximum="59" minimum="0"/>
+					<mx:Label text="分" width="15" styleName="InfoText"/>
+					<mx:NumericStepper id="sceStart" width="45" maximum="59" minimum="0"/>
+					<mx:Label text="秒" width="15" styleName="InfoText"/>
+				</mx:HBox>
+			</mx:VBox>
+			<mx:VBox width="100%">
+				<mx:HBox width="100%" horizontalGap="0">
+					<mx:Label text="结束时间" styleName="InfoText"/>
+					<mx:DateField id="dateField2" yearNavigationEnabled="true" showToday="false" width="90" formatString="YYYY-MM-DD" selectedDate="{new Date()}"/>
+					<mx:NumericStepper id="hourEnd" width="45" maximum="23" minimum="0" value="23"/>
+					<mx:Label text="点" width="15" styleName="InfoText"/>
+					<mx:NumericStepper id="minEnd" width="45" maximum="59" minimum="0" value="59"/>
+					<mx:Label text="分" width="15" styleName="InfoText"/>
+					<mx:NumericStepper id="sceEnd" width="45" maximum="59" minimum="0" value="59"/>
+					<mx:Label text="秒" width="15" styleName="InfoText"/>
+				</mx:HBox>
+			</mx:VBox>
+			<mx:HRule width="100%" height="2" alpha="0.4" styleName="WidgetRule"/>
+			<mx:HBox width="100%">
+				<mx:Button id="btnQuery" label="查询" styleName="InfoText" width="50" click="onBtnQueryHisHandler(event)"/>
+				<mx:Button id="btnback" label="回放" styleName="InfoText" width="50" click="onBackHandler(event)"/>
+				<mx:CheckBox label="跟踪" id="chkTrack" fontSize="12"  selected="true" click="clickTrack(event)"/>
+				<mx:Button label="详细信息" click="showdetail()">
+				</mx:Button>
+			</mx:HBox>
+			<mx:HRule width="100%" height="2" alpha="0.4" styleName="WidgetRule"/>
+			<mx:HBox width="100%" height="100%">
+				<mx:DataGrid id="resoultData" width="100%" height="100%" fontSize="12" dataProvider="{obj}">
+					<mx:columns>
+						<mx:DataGridColumn headerText="日期" dataField="日期"/>
+						<mx:DataGridColumn headerText="记录数" dataField="记录数"/>
+						<mx:DataGridColumn headerText="当前回放记录" dataField="nowRecord"/>
+						<!--<mx:DataGridColumn headerText="操作" width="50">
+							<mx:itemRenderer>
+								<fx:Component>
+									<mx:Button label="详细" click="this.outerDocument.showdetail()">
+									</mx:Button>
+								</fx:Component>
+							</mx:itemRenderer>
+						</mx:DataGridColumn>-->
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:HBox>
+        </s:VGroup>
+		<s:Group id="XCSB"
+				 width="100%" height="100%"
+				 visible="false"
+				 visible.XCSB="true">
+			<s:VGroup width="100%" height="100%">
+				<s:HGroup verticalAlign="middle">
+					<s:SWFLoader source="assets/images/Red_glow.swf" width="30" height="30"/>
+					<s:Label text="{'您有待处理业务:巡查共'+xcNum + '条,违章共' + wzNum + '条'}" />
+					<mx:LinkButton icon="@Embed('assets/images/update.png')" label="刷新" click="linkbutton1_clickHandler(event)"/>
+				</s:HGroup>
+				<mx:TabNavigator width="100%" height="100%" change="tabnavigator1_changeHandler(event)" >
+					<s:NavigatorContent width="100%" height="100%" label="巡查上报">
+						<mx:DataGrid id="rcDataGrid" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)">
+								<mx:columns>
+									<mx:DataGridColumn headerText="编号" dataField="bh"/>
+									<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
+									<mx:DataGridColumn headerText="发送时间" dataField="sbsy"/>
+									<mx:DataGridColumn headerText="巡查员" dataField="xdy"/>
+								</mx:columns>
+						</mx:DataGrid>
+					</s:NavigatorContent>	
+					<s:NavigatorContent  width="100%" height="100%" label="违章上报">
+						<mx:DataGrid id="wzDataGrid" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)">
+							<mx:columns>
+								<mx:DataGridColumn headerText="编号" dataField="bh"/>
+								<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
+								<mx:DataGridColumn headerText="发送时间" dataField="sbsy"/>
+								<mx:DataGridColumn headerText="巡查员" dataField="xdy"/>
+							</mx:columns>
+						</mx:DataGrid>
+					</s:NavigatorContent>	
+				</mx:TabNavigator>
+			</s:VGroup>
+		</s:Group>
+		<s:Group id="XCTJ"
+				 width="100%" height="100%"
+				 visible="false"
+				 visible.XCTJ="true">
+		</s:Group>
+		<s:VGroup id="RYGL" width="100%" height="100%"  visible="false" visible.RYGL="true">
+			<s:HGroup width="100%">
+				<s:Button icon="assets/images/folder.png" label="编辑" click="edit()"/>
+				<s:Button icon="assets/images/delete.png" label="删除" enabled="false" visible="false"/>
+			</s:HGroup>
+			<mx:DataGrid id="userDataGrid" doubleClick="userDataGrid_doubleClickHandler(event)" width="100%" height="100%" fontFamily="宋体" fontSize="12" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true">
+				<mx:columns>
+					<mx:DataGridColumn headerText="登录名" dataField="loginname"/>
+					<mx:DataGridColumn headerText="巡查员" dataField="realname"/>
+					<mx:DataGridColumn headerText="手机号码" dataField="mobile"/>
+				</mx:columns>
+			</mx:DataGrid>
+		</s:VGroup>
+    </viewer:WidgetTemplate>
+</viewer:BaseWidget>

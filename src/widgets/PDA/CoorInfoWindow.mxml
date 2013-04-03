@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx"  width="300" height="400" showCloseButton="true" close="PopUpManager.removePopUp(this)">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Map;
+			import com.esri.ags.geometry.MapPoint;
+			
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			[Bindable]
+			private var _info:Array;
+			public var map:Map;
+			
+			public function set info(value:Array):void
+			{
+				_info = value;
+			}
+			
+			protected function datagrid1_changeHandler(event:ListEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(dataGrid.selectedItem!=null)
+					this.map.centerAt(dataGrid.selectedItem.pt as MapPoint);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:HGroup width="100%" height="100%">
+		<mx:DataGrid id="dataGrid" width="100%" height="100%" dataProvider="{_info}" change="datagrid1_changeHandler(event)">
+			<mx:columns>
+				<mx:DataGridColumn headerText="时间" width="115" dataField="time"/>
+				<mx:DataGridColumn headerText="X坐标" dataField="pt.x"/>
+				<mx:DataGridColumn headerText="Y坐标" dataField="pt.y"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</s:HGroup>
+</mx:TitleWindow>

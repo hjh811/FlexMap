@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"  title="巡查统计结果"
+				xmlns:mx="library://ns.adobe.com/flex/mx" showCloseButton="true" creationComplete="titlewindow1_creationCompleteHandler(event)" close="PopUpManager.removePopUp(this);" width="600" height="500">
+	<fx:Script>
+		<![CDATA[
+			import com.as3xls.xls.ExcelFile;
+			import com.as3xls.xls.Sheet;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			
+			public var servletContext:String;
+			
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url = servletContext + "/gis/StatisticServlet";
+				httpservice.addEventListener(ResultEvent.RESULT,resultHandler);
+				httpservice.method = "POST";
+				var param:Object = new Object;
+				param.s = "select * from view_gps_statistic t";
+				httpservice.send(param);
+			}
+			
+			private function resultHandler(event:ResultEvent):void
+			{
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				var jsonColumns:Array = jsonObject["columns"] as Array;
+				if(jsonColumns==null) return;
+				var colunms:Array = new Array;
+				for(var i:int = 0;i<jsonColumns.length;i++)
+				{
+					var obj:String = jsonColumns[i] as String;
+					var column:DataGridColumn = new DataGridColumn;
+					column.headerText = obj;
+					column.dataField = obj;
+					colunms.push(column);
+				}
+				resultDataGrid.columns = colunms;
+				resultDataGrid.dataProvider = jsonObject["values"] as Array;
+			}
+			
+			
+			private function ExportExcel():void
+			{
+				var arrC:ArrayCollection = resultDataGrid.dataProvider as ArrayCollection;
+				exportToExcel(arrC);
+			}
+			private var sheet:Sheet = null; 
+			[Bindable]
+			private var fields:Array=new Array();
+			
+			private function exportToExcel(arrC:ArrayCollection):void
+			{
+				var dataProviderCollection:ArrayCollection=new ArrayCollection();
+				dataProviderCollection=arrC;
+				sheet=new Sheet();
+				var rowCount:int=dataProviderCollection.length;
+				sheet.resize(rowCount + 1, resultDataGrid.columnCount);
+				var columns:Array=resultDataGrid.columns;
+				var i:int=0;
+				
+				for each (var field:DataGridColumn in columns)
+				{
+					fields.push(field.dataField.toString());
+					sheet.setCell(0, i, columns[i].headerText);
+					i++;
+				}
+				
+				for (var r:int=0; r < rowCount; r++)
+				{
+					var record:Object=dataProviderCollection.getItemAt(r);
+					insertRecordInSheet(r + 1, sheet, record);
+				}
+				var xls:ExcelFile=new ExcelFile();
+				xls.sheets.addItem(sheet);
+				var bytes:ByteArray=xls.saveToByteArray();
+				var fr:FileReference=new FileReference();
+				fr.save(bytes, "统计结果.xls");
+			}
+			
+			private function insertRecordInSheet(row:int, sheet:Sheet, record:Object):void
+			{
+				var i:int=0;
+				for each (var field:String in fields)
+				{
+					sheet.setCell(row, i, record[field]);
+					i++;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%">
+			<s:Button label="导出Excel" click="ExportExcel()"/>
+		</s:HGroup>
+		<mx:DataGrid id="resultDataGrid" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]"
+					 >
+		</mx:DataGrid>
+	</s:VGroup>
+</mx:TitleWindow>

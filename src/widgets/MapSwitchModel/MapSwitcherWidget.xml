@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<configuration>
+	<labels>
+		<basemapslabel>基础地图</basemapslabel>
+		<layerlistlabel>图层目录</layerlistlabel>
+	</labels>
+    <layerlist visible="true">
+        <!-- <excludelayer>The Label Of Some Layer In Main Config File</excludelayer> -->
+    </layerlist>
+</configuration>
+
+<!--
+    See Map Switcher widget tag reference at
+    http://links.esri.com/mapswitcherwidget
+-->
