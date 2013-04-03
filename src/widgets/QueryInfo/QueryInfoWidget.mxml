@@ -24,7 +24,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.esri.ags.Graphic;
-			import com.esri.viewer.managers.Info;
+			import com.esri.viewer.components.Info;
 			import com.esri.ags.SpatialReference;
 			import com.esri.ags.events.MapMouseEvent;
 			import com.esri.ags.events.QueryEvent;
@@ -35,8 +35,8 @@
 			import com.esri.ags.symbols.SimpleMarkerSymbol;
 			import com.esri.ags.tasks.QueryTask;
 			import com.esri.ags.tasks.supportClasses.Query;
-			import com.esri.viewer.managers.DMInfo;
-			import com.esri.viewer.managers.ImageMedioInfo;
+			import com.esri.viewer.components.DMInfo;
+			import com.esri.viewer.components.ImageMedioInfo;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;

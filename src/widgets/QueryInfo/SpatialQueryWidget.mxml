@@ -11,7 +11,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.esri.ags.Graphic;
-			import com.esri.viewer.managers.ImageMedioInfo;
+			import com.esri.viewer.components.ImageMedioInfo;
 			import com.esri.ags.events.DrawEvent;
 			import com.esri.ags.events.QueryEvent;
 			import com.esri.ags.geometry.Geometry;
@@ -22,8 +22,8 @@
 			import com.esri.ags.tasks.supportClasses.Query;
 			import com.esri.ags.tools.DrawTool;
 			import com.esri.viewer.AppEvent;
-			import com.esri.viewer.managers.DMInfo;
-			import com.esri.viewer.managers.Info;
+			import com.esri.viewer.components.DMInfo;
+			import com.esri.viewer.components.Info;
 			
 			import mx.collections.ArrayCollection;
 			
@@ -245,13 +245,13 @@
 					}
 					else if(this.layerComb.selectedItem.@name =="爬梯" || this.layerComb.selectedItem.@name =="警示设施")
 					{
-						var info:Info = new Info;
+						var info:com.esri.viewer.components.Info= new com.esri.viewer.components.Info;
 						map.infoWindow.content = info;
 						info.param ={layer:this.layerComb.selectedItem.@name,tbzh:queryInfoResult.title,servletcontext:this.servletcontext}
 					}
 					else if(this.layerComb.selectedItem.@name =="横断面")
 					{
-						var dMInfo:DMInfo = new DMInfo;
+						var dMInfo:com.esri.viewer.components.DMInfo = new com.esri.viewer.components.DMInfo;
 						map.infoWindow.content = dMInfo;
 						dMInfo.param ={layer:this.layerComb.selectedItem.@name,tbzh:queryInfoResult.title,servletcontext:this.servletcontext}
 					}
