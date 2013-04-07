@@ -9,14 +9,12 @@
         </excludedEntries>
       </libraryPathEntry>
       <libraryPathEntry kind="1" linkType="1" path="libs"/>
-      <libraryPathEntry kind="3" linkType="1" path="/FlexManager/bin/FlexManager.swc" useDefaultLinkType="false"/>
     </libraryPath>
     <sourceAttachmentPath/>
   </compiler>
   <applications>
-    <application path="index.mxml"/>
     <application path="picturebox.mxml"/>
-    <application path="mapindex.mxml"/>
+    <application path="index.mxml"/>
   </applications>
   <modules>
     <module application="src/index.mxml" destPath="widgets/Bookmark/BookmarkWidget.swf" optimize="false" sourcePath="src/widgets/Bookmark/BookmarkWidget.mxml"/>
