@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" xmlns:viewer="com.esri.viewer.*" xmlns:managers="com.esri.viewer.managers.*"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Metadata>
+		[ResourceBundle("ViewerStrings")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.skins.ScaleBarSkin;
+			import com.esri.viewer.managers.MapManager;
+			import com.esri.viewer.ViewerContainer;
+			import com.esri.viewer.managers.ConfigManager;
+			import com.esri.viewer.managers.DataManager;
+			import com.esri.viewer.managers.UIManager;
+			import com.esri.viewer.managers.WidgetManager;
+
+
+			private var scalebarSkin:ScaleBarSkin;
+			[Bindable] 
+			private var useConfig:Object;
+			
+			[Bindable]
+			private var _userid:String;
+			
+			public function set UserID(value:String):void
+			{
+				this._userid = value;
+				var viewerContainer:ViewerContainer = new ViewerContainer;
+				//与老梁的部署在一块时使用该路径
+				//ViewerContainer.DEFAULT_WIDGET_CONTAINER_WIDGET = "flash/widgets/WidgetContainer/WidgetContainerWidget.swf";  
+				
+				//useService：是否使用服务的配置， userID:用户ID
+				viewerContainer.userObject = {useService:false, userID:"-1"};
+				viewerContainer.configManager = new ConfigManager;
+				viewerContainer.dataManager = new DataManager;
+				viewerContainer.mapManager = new MapManager;
+				viewerContainer.uiManager = new UIManager;
+				viewerContainer.widgetManager = new WidgetManager;
+				
+				this.addElement(viewerContainer);
+			}
+			
+			public function get UserID():String
+			{
+				return this._userid;
+			}
+		]]>
+	</fx:Script>
+	<!--<viewer:ViewerContainer id="viewerContainer">
+		<viewer:configManager>
+			<managers:ConfigManager id="configManager"/>
+		</viewer:configManager>
+		<viewer:dataManager>
+			<managers:DataManager id="dataManager"/>
+		</viewer:dataManager> 
+		<viewer:mapManager>
+			<managers:MapManager id="mapManager"/>
+		</viewer:mapManager>
+		<viewer:uiManager>
+			<managers:UIManager id="uiManager"/>
+		</viewer:uiManager>
+		<viewer:widgetManager>
+			<managers:WidgetManager id="widgetManager"/>
+		</viewer:widgetManager>
+	</viewer:ViewerContainer>-->
+</s:Group>
