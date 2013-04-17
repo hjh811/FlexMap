@@ -1,26 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" headerHeight="25" title="测量报告"
 														xmlns:s="library://ns.adobe.com/flex/spark" 
-														xmlns:mx="library://ns.adobe.com/flex/mx" layout="absolute" width="566" height="450" showCloseButton="true" close="PopUpManager.removePopUp(this)" borderVisible="true">
+														xmlns:viewer="com.esri.viewer.*"
+														xmlns:esri="http://www.esri.com/2008/ags"
+														xmlns:mx="library://ns.adobe.com/flex/mx" layout="absolute" width="450"
+														height="400" showCloseButton="true" close="PopUpManager.removePopUp(this)"
+														borderVisible="true">
 	
-	
-	
+
 	<fx:Script>
 		<![CDATA[
+			import com.esri.ags.Map;
+			import com.esri.ags.events.QueryEvent;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
 			import flash.utils.flash_proxy;
-			
+			import com.esri.ags.Graphic;
 			import mx.controls.Alert;
 			import mx.events.CloseEvent;
 			import mx.managers.PopUpManager;
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
 			import mx.rpc.http.HTTPService;
+			
+			import org.osmf.events.TimeEvent;
 			public var gcid:String ="";
+			public var map:Map;
+			public var layerid:String;
 			public var servletContent:String = "";
 			[Bindable]
-			private var _progressid:Object = null;
+			public var _progressid:Object = null;
 			[Bindable]
-			private var showedit:Boolean = false;
+			public var showedit:Boolean = false;
 			[Bindable]
 			public var times:String ="";
 			public function set progressid(value:Object):void
@@ -34,6 +50,7 @@
 			private function progress():void
 			{
 				showedit=false;
+				PopUpManager.removePopUp(this);
 			}
 			private function edit():void
 			{
@@ -41,55 +58,155 @@
 			}
 			private function saveedit():void
 			{
+				var gcyqxh:String=yqxh.text;
+				var sfnf:String=fnf.text;
+				var sfyf:String=fyf.text;
+				var slyf:String=lyf.text;
+				var slnf:String=lnf.text;
+				var sbyf:String=byf.text;
+				var sbnf:String=bnf.text;
+				var times:String=gccs.text;
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url= servletContent + "/dfgc/gccxServlet";
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				var params:URLVariables = new URLVariables();                               
+				params.sty = "updategc"; 
+				params.id = gcid; 
+				params.gcyqxh=gcyqxh;
+				params.sfnf=sfnf;
+				params.sfyf=sfyf;
+				params.slyf=slyf;
+				params.slnf=slnf;
+				params.sbyf=sbyf;
+				params.sbnf=sbnf;
+				params.times=times;
+				httpservice.addEventListener(ResultEvent.RESULT,lodgcdhandler);
+				httpservice.send(params);
+				
+			}
+			private function lodgcdhandler(event:ResultEvent):void
+			{
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				var resid:String=jsonObject["id"] as String;
+				if(resid=="true")
+				{
+					PopUpManager.removePopUp(this);
+				}
+				else
+				{
+					Alert.show("保存失败！");
+				}
 			}
 			private function resoultData_doubleClickHandler(event:Event):void
-			{}
+			{
+				var grid:DataGrid = event.currentTarget as DataGrid;
+				var select:Object=grid.selectedItem;
+				doquery(select);
+			}
+			private function doquery(select:Object):void
+			{
+				var queryTask:QueryTask = new QueryTask;
+				queryTask.url = layerid;
+				queryTask.addEventListener(QueryEvent.EXECUTE_COMPLETE,queryTaskHandler);
+				queryTask.addEventListener(FaultEvent.FAULT,queryTaskErr)
+				//				queryTask.useAMF = false;
+				var query:Query = new Query;
+				query.returnGeometry = true;
+				var bhwhere:String;
+				bhwhere="TBZH='"+select.tbzh +"'";
+				query.where=bhwhere;
+				queryTask.execute(query);
+			}
+			private function queryTaskErr(event:FaultEvent ):void
+			{
+				Alert.show(event.fault.faultString);
+			}
+			
+			private function queryTaskHandler(event:QueryEvent):void
+			{    
+				
+				if(event.featureSet!=null && event.featureSet.features.length>0)
+				{   
+				 p=event.featureSet.features[0].geometry as MapPoint;
+				map.centerAt(p);
+				ist=true;
+				var t:Timer=new Timer(250,8)
+					t.addEventListener(TimerEvent.TIMER,timer);
+					t.start();
+					
+					}
+
+			}
+			private var p:MapPoint;
+			private var gl:GraphicsLayer=new GraphicsLayer();
+			private var ist:Boolean=true;
+			private function timer(event:Event):void
+			{
+				if(ist)
+				{
+					var symbol:PictureMarkerSymbol=new PictureMarkerSymbol("assets/images/" + "Red_glow.swf",20,20);
+					var g:Graphic=new Graphic(p,symbol);
+					gl.add(g);
+					map.addLayer(gl);
+					ist=false;
+				}
+				else
+				{
+					gl.clear();
+					map.removeLayer(gl);
+					ist=true;
+				}
+			}
+				
+				
+		
 		]]>
 	</fx:Script>
 	<fx:Declarations>
 		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
 	</fx:Declarations>
-	<s:HGroup width="95%" verticalAlign="middle" height="30" top="10" left="14">
+	<s:HGroup width="95%" verticalAlign="middle" height="30" top="10" left="14" visible="false" >
 		<s:Button left="30" label="返回" width="100" click="progress()"/>
 		<s:Button label="编辑" width="100" click="edit()"/>
 		<s:Button id="saveedits" label="保存编辑" width="100" click="saveedit()" visible="{showedit}" />	
 	</s:HGroup>
-	<s:HGroup width="95%" verticalAlign="middle" height="25" top="40" left="14">
+	<s:HGroup width="95%" verticalAlign="middle" height="25" top="10" left="10">
 		<s:Label text="编       号 ：" left="20"/> 
-		<s:TextInput id="bh" width="150"  text="{_progressid.bh}" editable="{showedit}"/>
+		<s:TextInput id="bh" width="150"  text="{_progressid.bh}" editable="false"/>
 	</s:HGroup>	
-	<s:HGroup width="95%" verticalAlign="middle" height="25" top="65" left="14">
+	<s:HGroup width="95%" verticalAlign="middle" height="25" top="35" left="10">
 		<s:Label text="工 程  地 点：" left="20"/> 
-		<s:TextInput id="gcdd" width="150"  text="{_progressid.gcmc}" editable="{showedit}"/>
+		<s:TextInput id="gcdd" width="120"  text="{_progressid.gcmc}" editable="false"/>
 		<s:Label text="观测仪器型号：" left="20" /> 
 		<s:TextInput id="yqxh" width="100%"  text="{_progressid.gcyqxh}" editable="{showedit}"/>
 	</s:HGroup>
-	<s:HGroup width="95%" verticalAlign="middle" height="25" top="90" left="14">
+	<s:HGroup width="95%" verticalAlign="middle" height="25" top="60" left="10">
 		<s:Label text="首次观测日期：" left="20"/> 
-		<s:HGroup width="150"  height="100%" verticalAlign="middle" >
-		<s:TextInput id="fnf" width="50"  text="{_progressid.firstnf}" editable="{showedit}" left="10"/>
-		<s:Label text="年" left="20" /> 
-		<s:TextInput id="fyf" width="50"  text="{_progressid.firstyf}" editable="{showedit}"/>
-		<s:Label text="月" left="20" /> 	
+		<s:HGroup width="120"  height="100%" verticalAlign="middle" >
+		<s:TextInput id="fnf" width="40"  text="{_progressid.firstnf}" editable="{showedit}" left="10"/>
+		<s:Label text="年"  /> 
+		<s:TextInput id="fyf" width="40"  text="{_progressid.firstyf}" editable="{showedit}"/>
+		<s:Label text="月" /> 	
 		</s:HGroup>
 		<s:Label text="上次观测日期：" left="20" /> 
-		<s:TextInput id="lnf" width="50"  text="{_progressid.lastnf}" editable="{showedit}"/>
-		<s:Label text="年" left="20" /> 
-		<s:TextInput id="lyf" width="50"  text="{_progressid.lastyf}" editable="{showedit}"/>
-		<s:Label text="月" left="20" /> 
+		<s:TextInput id="lnf" width="40"  text="{_progressid.lastnf}" editable="{showedit}"/>
+		<s:Label text="年"/> 
+		<s:TextInput id="lyf" width="40"  text="{_progressid.lastyf}" editable="{showedit}"/>
+		<s:Label text="月" /> 
 	</s:HGroup>
-	<s:HGroup width="95%" verticalAlign="middle" height="25" top="115" left="14">
+	<s:HGroup width="95%" verticalAlign="middle" height="25" top="85" left="10">
 		<s:Label text="本次观测日期：" left="20"/> 
-		<s:HGroup width="150"  height="100%" verticalAlign="middle" >
-		<s:TextInput id="bnf" width="50"  text="{_progressid.thisnf}" editable="{showedit}"/>
-		<s:Label text="年" left="20" /> 
-		<s:TextInput id="byf" width="50"  text="{_progressid.thisyf}" editable="{showedit}"/>
-		<s:Label text="月" left="20" /> 
+		<s:HGroup width="120"  height="100%" verticalAlign="middle" >
+		<s:TextInput id="bnf" width="40"  text="{_progressid.thisnf}" editable="{showedit}"/>
+		<s:Label text="年"  /> 
+		<s:TextInput id="byf" width="40"  text="{_progressid.thisyf}" editable="{showedit}"/>
+		<s:Label text="月"  /> 
 		</s:HGroup>
 		<s:Label text="观 测  次 数：" left="20" /> 
-		<s:TextInput id="gccs" width="100%"  text="{times}" editable="{showedit}"/>
+		<s:TextInput id="gccs" width="100%"  text="{_progressid.times}" editable="{showedit}"/>
 	</s:HGroup>
-	<mx:DataGrid id="rcDataGrid" width="95%" height="270" top="140" left="14" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)" >
+	<mx:DataGrid id="rcDataGrid" width="95%" height="240" top="110" left="10" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true"   >
 		<mx:columns>
 			<mx:DataGridColumn headerText="点号" dataField="dh"/>
 			<mx:DataGridColumn headerText="首次观测值" dataField="firstgcz"/>

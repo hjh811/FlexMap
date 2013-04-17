@@ -5,6 +5,10 @@
         <gcdlabel>观测堤段</gcdlabel>
     </labels>
     <QueryLayer>
-	    <layerid>http://localhost/ArcGIS/rest/services/tbzh/MapServer/14</layerid>
+	    <layerid>http://localhost/ArcGIS/rest/services/DFDATA/MapServer/7</layerid>
 	</QueryLayer>
+	<MODULEDATA>
+	    <module id = "1" title="观测报告" icon="assets/images/statistics.png">true</module>
+	    <!--<module id = "2" title="观测堤段" icon="assets/images/i_pin2.png">true</module>	 -->   
+	</MODULEDATA>
 </configuration>

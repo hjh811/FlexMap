@@ -25,24 +25,65 @@
          xmlns:flash="flash.filters.*"
          creationComplete="init()"
          currentState="">
-
+<fx:Style>
+	@namespace s "library://ns.adobe.com/flex/spark";
+	@namespace mx "library://ns.adobe.com/flex/mx";
+	@namespace flash "flash.filters.*";
+	.InfoCanvas
+	{
+		borderStyle: solid;
+		borderColor: #FFFFFF;
+		borderAlpha: 1;
+		borderThickness: 1;
+		cornerRadius: 4;
+		backgroundAlpha: 0.7;
+		backgroundColor: #B8B8B8;
+		dropShadowEnabled: true;
+		shadowDirection: right;
+		shadowDistance: 5;
+		horizontalScrollPolicy: off;
+		verticalScrollPolicy:off;
+	}
+	
+	.InfoTitle
+	{
+		font-weight:bold;
+		font-size:12;
+		color: #000000;
+	}
+	
+	.InfoText
+	{
+		font-size:12;
+		color: #000000;
+		font-family: Arial;
+	}
+</fx:Style>
     <fx:Script>
         <![CDATA[
             import com.esri.ags.Map;
             import com.esri.ags.events.ExtentEvent;
             import com.esri.ags.events.PanEvent;
             import com.esri.ags.geometry.MapPoint;
-
+            
             import mx.core.FlexGlobals;
             import mx.events.FlexEvent;
-
+            
             import spark.components.Application;
 
             private function init():void
             {
                 map.addEventListener(PanEvent.PAN_UPDATE, repositionInfo);
                 map.addEventListener(ExtentEvent.EXTENT_CHANGE, repositionInfo);
+				infoContainer.addEventListener(MouseEvent.ROLL_OUT,MouseOutRemoveHandler);
             }
+			
+			private function MouseOutRemoveHandler(event:MouseEvent):void
+			{
+				infoContainer.removeEventListener(MouseEvent.ROLL_OUT, MouseOutRemoveHandler);
+				infoData = null;
+				map.removeChild(this);
+			}
 
             private var _map:Map;
 

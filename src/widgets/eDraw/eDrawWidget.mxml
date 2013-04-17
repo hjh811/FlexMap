@@ -92,7 +92,7 @@ Info on previous versions is in the ReadMe.txt
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
 			import mx.rpc.http.HTTPService;
-			
+			import com.esri.viewer.ViewerContainer;
 			import spark.components.supportClasses.ItemRenderer;
 			private const ICON_URL:String = "assets/images/";
 			private const TEXT_MODE:String = "text";
@@ -1733,7 +1733,7 @@ Info on previous versions is in the ReadMe.txt
 				httpservice.resultFormat = "text";
 				var params:URLVariables = new URLVariables();                 
 				//这个user,psw就是传入后台的参数user,jsp就用 request.getParameter("user")来取                 
-				params.userid = "123";                
+				params.userid = ViewerContainer.getInstance().userObject.userID;                
 				params.sty = "put"; 
 				params.name = name;
 				params.graphic = graphic;
@@ -1793,7 +1793,7 @@ Info on previous versions is in the ReadMe.txt
 					httpservice.resultFormat = "text";
 					var params:URLVariables = new URLVariables();                 
 					//这个user,psw就是传入后台的参数user,jsp就用 request.getParameter("user")来取                 
-					params.userid = httpEncoding("123");                
+					params.userid = ViewerContainer.getInstance().userObject.userID;                
 					params.sty = httpEncoding("delete"); 
 					params.id = httpEncoding(deledraw.id);
 					httpservice.addEventListener(ResultEvent.RESULT,delhandler);
@@ -1820,7 +1820,7 @@ Info on previous versions is in the ReadMe.txt
 					httpservice.resultFormat = "text";
 					var params:URLVariables = new URLVariables();                 
 					//这个user,psw就是传入后台的参数user,jsp就用 request.getParameter("user")来取                 
-					params.userid = httpEncoding("123");                
+					params.userid = ViewerContainer.getInstance().userObject.userID;                
 					params.sty = httpEncoding("get"); 
 					httpservice.addEventListener(ResultEvent.RESULT,handler);
 					httpservice.send(params);

@@ -40,21 +40,31 @@
 	<fx:Style>
 		@namespace s "library://ns.adobe.com/flex/spark";
 		@namespace mx "library://ns.adobe.com/flex/mx";
-		@namespace viewer "com.esri.viewer.*";
-		@namespace components "com.esri.viewer.components.*";
-		@namespace PDA "widgets.PDA.*";
 		
-		global
+		mx|DataGrid
 		{
-			font-family:"宋体";
+			alternatingItemColors: #EFF3FA, #FFFFFF;
+			verticalGridLineColor: #696969;
+			horizontal-grid-lines:false;
+		}
+		
+		.InfoTitle
+		{
+			font-weight:bold;
+			font-size:12;
+			color: #000000;
+		}
+		
+		.InfoText
+		{
+			font-size:12;
+			color: #000000;
+			font-family: Arial;
 		}
 	</fx:Style>
     <fx:Script>
         <![CDATA[
 			import com.esri.ags.Graphic;
-			
-			import mx.utils.ObjectUtil;
-			
 			import com.esri.ags.events.MapMouseEvent;
 			import com.esri.ags.geometry.Geometry;
 			import com.esri.ags.geometry.MapPoint;
@@ -62,6 +72,7 @@
 			import com.esri.ags.layers.GraphicsLayer;
 			import com.esri.ags.symbols.PictureMarkerSymbol;
 			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.viewer.components.InfoPopup;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
@@ -72,6 +83,7 @@
 			import mx.managers.PopUpManager;
 			import mx.rpc.events.ResultEvent;
 			import mx.rpc.http.HTTPService;
+			import mx.utils.ObjectUtil;
 			
 			import spark.components.supportClasses.ItemRenderer;
 			import spark.effects.Move3D;
@@ -107,6 +119,7 @@
 			
             private function init():void
             {
+				//Alert.show("ok");
                 if (configXML)
                 {
 					var moduleList:XMLList=configXML..module;
@@ -401,10 +414,18 @@
 						this.map.addChild(infoPupop);
 
 						infoPupop.infoData = pdaResult;
+						//infoPupop.addEventListener(MouseEvent.ROLL_OUT, MouseOutRemoveHandler);
 					}
 					gra.addEventListener(MouseEvent.CLICK,graClickHandler);
 					graphicsLayer.add(gra);
 				}
+			}
+			
+			private function MouseOutRemoveHandler(event:MouseEvent):void
+			{
+				var infoPupop:PDAInfoPopup = event.currentTarget as PDAInfoPopup;
+				infoPupop.removeEventListener(MouseEvent.MOUSE_OUT, MouseOutRemoveHandler);
+				this.map.removeChild(infoPupop);
 			}
 			
 			
@@ -419,6 +440,7 @@
 				infoPupop.name="PDA" + pdaResult.title;
 				this.map.addChild(infoPupop);
 				infoPupop.infoData = pdaResult;
+				//infoPupop.addEventListener(MouseEvent.MOUSE_OUT, MouseOutRemoveHandler);
 			}
 			
 			
@@ -1227,7 +1249,7 @@
 			</mx:HBox>
 			<mx:HRule width="100%" height="2" alpha="0.4" styleName="WidgetRule"/>
 			<mx:HBox width="100%" height="100%">
-				<mx:DataGrid id="resoultData" width="100%" height="100%" fontSize="12" dataProvider="{obj}">
+				<mx:DataGrid id="resoultData" styleName="dataGridStyle" width="100%" height="100%" fontSize="12" dataProvider="{obj}">
 					<mx:columns>
 						<mx:DataGridColumn headerText="日期" dataField="日期"/>
 						<mx:DataGridColumn headerText="记录数" dataField="记录数"/>
@@ -1255,8 +1277,8 @@
 					<mx:LinkButton icon="@Embed('assets/images/update.png')" label="刷新" click="linkbutton1_clickHandler(event)"/>
 				</s:HGroup>
 				<mx:TabNavigator width="100%" height="100%" change="tabnavigator1_changeHandler(event)" >
-					<s:NavigatorContent width="100%" height="100%" label="巡查上报">
-						<mx:DataGrid id="rcDataGrid" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)">
+					<s:NavigatorContent width="100%"  height="100%" label="巡查上报">
+						<mx:DataGrid id="rcDataGrid" styleName="dataGridStyle" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)">
 								<mx:columns>
 									<mx:DataGridColumn headerText="编号" dataField="bh"/>
 									<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
