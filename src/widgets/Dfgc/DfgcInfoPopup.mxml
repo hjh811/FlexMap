@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+///////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2010-2011 Esri. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+///////////////////////////////////////////////////////////////////////////
+-->
+<!---
+Pop-up component used to show feature information.
+-->
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:flash="flash.filters.*"
+		 creationComplete="init()"
+		 currentState="">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Map;
+			import com.esri.ags.events.ExtentEvent;
+			import com.esri.ags.events.PanEvent;
+			import com.esri.ags.geometry.MapPoint;
+			import mx.rpc.http.HTTPService;
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import spark.components.Application;
+			private var form:Dfgctb =null;
+			private function init():void
+			{
+				map.addEventListener(PanEvent.PAN_UPDATE, repositionInfo);
+				map.addEventListener(ExtentEvent.EXTENT_CHANGE, repositionInfo);
+			}
+			
+			private var _map:Map;
+			
+			public function set map(value:Map):void
+			{
+				_map = value;
+			}
+			
+			public function get map():Map
+			{
+				return _map;
+			}
+			
+			private var _infoData:Object;
+			
+			public function set infoData(value:Object):void
+			{
+				_infoData = value;
+				if (value)
+				{
+					setInfoParameters();
+				}
+				else
+				{
+					currentState = "";
+				}
+			}
+			
+			public function get infoData():Object
+			{
+				return _infoData;
+			}
+			
+			private function setInfoParameters():void
+			{
+				positionInfo();
+				
+//				infoIcon.source = infoData.icon;
+				infoTitle.text ="点号:"+ infoData.dh;
+				infobh.text="统编桩号:"+infoData.tbzh;
+				infoContent.text = "观测值:"+infoData.gcz + "m";
+				infowyl.text = "位移量:"+infoData.wyl + "m";
+				infoljwy.text = "累积位移量:"+infoData.ljwy + "m";
+				infosj.text=infoData.nf+"年"+infoData.yf+"月";
+				
+				//clear picture and link button
+				infoImage.source = "";
+				infoImage.height = 0;
+				infoImage.visible = false;
+				infoImage.includeInLayout = false;
+				infoLink.visible = false;
+				infoLink.includeInLayout = false;
+				
+//				if (infoData.link)
+//				{
+//					var link:String = infoData.link as String;
+//					var pos:Number = link.length - 4;
+//					var sfx:String = link.substr(pos, 4).toLowerCase();
+//					if ((sfx == ".jpg") || (sfx == ".png") || (sfx == ".gif"))
+//					{
+//						infoImage.source = link;
+//						infoImage.height = 150;
+//						infoImage.visible = true;
+//						infoImage.includeInLayout = true;
+//					}
+//					else
+//					{
+//						infoLink.visible = true;
+//						infoLink.includeInLayout = true;
+//					}
+//				}
+//				
+//				//point icon based on direction
+//				if (infoData.content)
+//				{
+//					var content:String = infoData.content;
+//					if ((content.indexOf("BEARING: NE") != -1) || (content.indexOf("BEARING: SE") != -1) || (content.indexOf("BEARING: E") != -1))
+//					{
+//						flipIcon("RIGHT");
+//					}
+//					else
+//					{
+//						flipIcon("LEFT");
+//					}
+//				}
+			}
+			
+			public function positionInfo():void
+			{
+				if ((map.extent) && (infoData))
+				{
+					var pt:MapPoint = infoData.point;
+					var infoPt:Point = map.toScreen(pt);
+					var reg:String = "regLeft";
+					//                    if (infoPt.x > map.width / 2)
+					//                    {
+					//                        reg = "regRight";
+					//                    }
+					currentState = reg;
+					this.x = infoPt.x-35  ;
+					this.y = infoPt.y-35  ;
+					
+					//					repositionInfo(null);
+				}
+				
+			}
+			
+			public function repositionInfo(event:Event):void
+			{
+				if ((map.extent) && (infoData))
+				{
+					var pt:MapPoint = infoData.point;
+					var infoPt:Point = map.toScreen(pt);
+//					var reg:String = "regLeft";
+//					if (infoPt.x > map.width / 2)
+//					{
+//						reg = "regRight";
+//					}
+//					currentState = reg;
+					this.x = infoPt.x-35 ;
+					this.y = infoPt.y-35 ;
+				}
+			}
+			
+			private function closeInfo():void
+			{
+				infoData = null;
+				this.map.removeChild(this);
+			}
+			private function showInfo():void
+			{
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url= infoData.servletcontext + "/dfgc/gccxServlet";
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				var params:URLVariables = new URLVariables();                               
+				params.sty = "gcztb"; 
+				params.tbzh = infoData.tbzh; 
+				httpservice.addEventListener(ResultEvent.RESULT,gcztbhandler);
+				httpservice.send(params);	
+			}
+			private function gcztbhandler(event:ResultEvent):void
+			{
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				var lineChartData:ArrayCollection=new ArrayCollection();
+				var dh:String="";
+				var tbzh:String="";
+				for(var i:int=0;i<jsonValues.length;i++)
+				{
+					var thisgcz:String=jsonValues[i].thisgcz as String;
+					var thiswyl:String=jsonValues[i].thiswyl as String;
+					var ljwyl:String=jsonValues[i].ljwyl as String;
+					var nf:int=jsonValues[i].thisnf as int;
+					var yf:int=jsonValues[i].thisyf as int;
+					dh=jsonValues[i].dh as String;
+					tbzh=jsonValues[i].tbzh as String;
+					var object:Object=new Object();
+					object.date=new Date(nf,yf);
+					object.gczvalue=getint(thisgcz);
+					object.wylvalue=getint(thiswyl);
+					object.ljwyvalue=getint(ljwyl);
+					object.gczdes=thisgcz;
+					object.wyldes=thiswyl;
+					object.ljwydes=ljwyl;
+					lineChartData.addItem(object);	
+				}
+				if(form!=null)
+				{
+					PopUpManager.removePopUp(form);
+				}
+				form =PopUpManager.createPopUp(this.parentApplication.parent,Dfgctb,false) as Dfgctb;
+				form.lineChartData=lineChartData;
+				
+				form.format=[{period:"MM",format:"YYYY年MM月"},{period:"YYYY",format:"YYYY年MM月"}];
+				form.dh=dh;
+				form.tbzh=tbzh;
+				form.ChartCursor.categoryBalloonDateFormat="YYYY年MM月";
+				PopUpManager.centerPopUp(form);
+			}
+			private function getint(str:String):Number
+			{
+				try
+				{
+					var ii:Number=parseFloat(str);
+					if(isNaN(ii))
+					{
+						ii=0;
+					}
+					return ii;
+				}
+				catch(e:Error)
+				{
+					return 0;
+				}
+				return 0;
+			}
+			private function showLink():void
+			{
+				navigateToURL(new URLRequest(infoData.link));
+			}
+			
+			private function flipIcon(dir:String):void
+			{
+				var invertMatrix:Matrix = new Matrix(1, 0, 0);
+				// set matrix to invert horizontally
+				
+				if (dir == "RIGHT")
+				{
+					invertMatrix.scale(-1, 1);
+					// move matrix, so right is at left, and vice versa
+					invertMatrix.translate(40, 0);
+				}
+				
+//				var iconTrans:Transform = new Transform(infoIcon);
+//				iconTrans.matrix = invertMatrix;
+			}
+			
+			protected function infoLink_preinitializeHandler(event:FlexEvent):void
+			{
+				if (isRtl())
+				{
+					infoLink.source = "assets/images/w_link.png";
+				}
+				else
+				{
+					infoLink.source = "assets/images/w_link_rtl.png";
+				}
+			}
+			
+			public function isRtl():Boolean
+			{
+				var result:Boolean = false;
+				try
+				{
+					result = (FlexGlobals.topLevelApplication as Application).layoutDirection == "rtl";
+				}
+				catch (error:Error)
+				{
+					result = false;
+				}
+				return result;
+			}
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="regLeft"/>
+		<s:State name="regRight" basedOn="regLeft"/>
+	</s:states>
+	
+	<s:transitions>
+		<s:Transition id="maximize"
+					  fromState=""
+					  toState="*">
+			<s:Resize duration="600" target="{infoContainer}"/>
+		</s:Transition>
+		<s:Transition id="minimize"
+					  fromState="*"
+					  toState="">
+			<s:Parallel>
+				<s:Resize duration="300" target="{infoContainer}"/>
+			</s:Parallel>
+		</s:Transition>
+		<s:Transition id="regSwitch"
+					  fromState="*"
+					  toState="+">
+			<s:Parallel>
+				<s:Move duration="300" target="{infoCanvas}"/>
+			</s:Parallel>
+		</s:Transition>
+	</s:transitions>
+	
+	<s:Group id="infoContainer"
+			 x="0" y="0" width="0" height="0">
+		<mx:HRule id="infoRule"
+				  x="40" x.regRight="200" y="40" width="30" height="1"
+				  alpha="1"
+				  shadowColor="#ffffff"
+				  strokeColor="#FFFFFF"
+				  visible="false"
+				  visible.regLeft="true">
+			<mx:filters>
+				<flash:GlowFilter alpha="0.3"
+								  blurX="5"
+								  blurY="5"
+								  color="#000000"/>
+			</mx:filters>
+		</mx:HRule>
+		<mx:Canvas id="infoCanvas" backgroundAlpha="0.5"
+				   x="70" x.regRight="50" y="10" width="150"
+				   minHeight="60" styleName="InfoCanvas">
+			<mx:VBox width="100%" height="100%"
+					 horizontalAlign="left"
+					 paddingBottom="4"
+					 paddingLeft="4"
+					 paddingRight="4"
+					 paddingTop="4"
+					 verticalAlign="middle"
+					 verticalGap="0">
+				<mx:Text id="infoTitle"
+						 width="100%"
+						 text="Title"
+						 visible="false"
+						 styleName="InfoTitle"
+						 visible.regLeft="true"/>
+				<mx:Text id="infobh"
+						 width="100%"
+						 text="Content"
+						 visible="false"
+						 visible.regLeft="true" styleName="infobh"/>
+				<mx:Text id="infoContent"
+						 width="100%"
+						 text="Content"
+						 visible="false"
+						 visible.regLeft="true" styleName="InfoText"/>
+				<mx:Text id="infowyl"
+						 width="100%"
+						 text="Title"
+						 visible="false"
+						 styleName="infowyl"
+						 visible.regLeft="true"/>
+				<mx:Text id="infoljwy"
+						 width="100%"
+						 text="Content"
+						 visible="false"
+						 visible.regLeft="true" styleName="infoljwy"/>
+				<mx:Text id="infosj"
+						 width="100%"
+						 text="Content"
+						 visible="false"
+						 visible.regLeft="true" styleName="infosj"/>
+				<mx:Image id="infoImage"
+						  height="0"
+						  source = "assets/images/w_link.png"
+						  includeInLayout="false"
+						  visible="false"
+						  visible.regLeft="true"/>
+				<mx:Image id="infoLink"
+						  buttonMode="true"
+						  click="showLink()"
+						  includeInLayout="false"
+						  preinitialize="infoLink_preinitializeHandler(event)"
+						  source="assets/images/w_link.png"
+						  useHandCursor="true"
+						  visible="false"/>
+			</mx:VBox>
+			<mx:HBox width="100%"
+					 horizontalAlign="right"
+					 paddingRight="2" horizontalGap="2"
+					 paddingTop="2">
+				<mx:Image alpha="0.7"
+						  buttonMode="true"
+						  click="showInfo()"
+						  source="assets/images/w_link.png"
+						  useHandCursor="true"
+						  visible="true"/>
+				<mx:Image alpha="0.7" id="popcol"
+						  buttonMode="true"
+						  source="assets/images/widget/w_close.png"
+						  useHandCursor="true"
+						  visible="true"/>
+			</mx:HBox>
+		</mx:Canvas>
+		
+		
+	</s:Group>
+	
+</s:Group>

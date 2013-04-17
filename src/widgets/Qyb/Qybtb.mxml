@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" headerHeight="25" title="晴雨表"
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:viewer="com.esri.viewer.*"
+				xmlns:esri="http://www.esri.com/2008/ags"
+				xmlns:mx="library://ns.adobe.com/flex/mx" layout="absolute" width="650"
+				height="400" showCloseButton="true" close="PopUpManager.removePopUp(this)"
+				borderVisible="true">
+	
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import flash.utils.flash_proxy;
+			import com.esri.ags.Graphic;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			
+			import org.osmf.events.TimeEvent;
+			public var gcid:String ="";
+			
+			public var layerid:String;
+			public var servletContent:String = "";
+			[Bindable]
+			public var _progressid:Object = null;
+			[Bindable]
+			public var showedit:Boolean = false;
+			[Bindable]
+			public var times:String ="";
+			
+			public function jylsel():void
+			{
+				
+					jyl.selected=true;
+					ljjyl.selected=false;
+				
+			}
+			public function ljjylsel():void
+			{
+				
+					ljjyl.selected=true;
+					jyl.selected=false;
+
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:HGroup width="95%" verticalAlign="middle" height="30" top="5" left="14" visible="true" >
+			
+    </s:HGroup>
+	<s:HGroup width="95%" verticalAlign="middle" height="95%" top="35" left="14" visible="true" >
+		<s:VGroup width="20%"  height="95%"  left="14" visible="true" >
+			<mx:RadioButton  id="jyl" label="降雨量" selected="true" change="jylsel()"/>
+			<mx:RadioButton id="ljjyl" label="累计降雨量" selected="false" change="ljjylsel()"/>
+		</s:VGroup>
+		<s:VGroup width="70%"  height="95%"  left="14" visible="true" >
+			<s:HGroup width="95%"  height="30"  visible="true" >
+				<s:Label id="tbname" text="降雨量" />
+				<s:Label id="tbunit" text="(单位:毫米)" />
+			</s:HGroup>
+			
+		</s:VGroup>
+	</s:HGroup>
+	
+</mx:TitleWindow>

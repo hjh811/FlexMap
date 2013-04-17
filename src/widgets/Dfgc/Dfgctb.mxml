@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" headerHeight="35" title="观测点统计图"
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:amcharts="http://www.amcharts.com/com_internal"
+				xmlns:esri="http://www.esri.com/2008/ags"
+				
+				xmlns:mx="library://ns.adobe.com/flex/mx" layout="absolute" width="450"
+				height="450" showCloseButton="true" close="PopUpManager.removePopUp(this)"
+				borderVisible="true" xmlns:Dfgc="widgets.Dfgc.*">
+	
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			[Embed(source='assets/images/icon_to.png')]
+			private var _star:Class;
+			[Bindable]
+			public var lineChartData:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			public var format:Array= new Array();
+			[Bindable]
+			public var dh:String;
+			[Bindable]
+			public var tbzh:String;
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<mx:TabNavigator width="100%" height="100%" >
+		<s:NavigatorContent width="100%" height="100%" label="观测值">
+			<s:HGroup width="100%" height="25" top="0" verticalAlign="middle">
+				<s:Label text="点号：" />
+					<s:Label text="{dh}" />
+						<s:Label text="统编桩号：" />
+							<s:Label text="{tbzh}" />
+			</s:HGroup>
+			<Dfgc:MyAmSerialChart
+				id="gcz"
+				width="90%"
+				height="90%"
+				autoMargins="false"
+				marginRight="5" 
+				marginLeft="35"
+				marginBottom="25"
+				marginTop="30"
+				categoryField="date"
+				
+				dataProvider="{lineChartData}">
+				
+				<Dfgc:graphs>
+					<amcharts:AmGraph  id="g1"
+						title="观测值"
+						valueField="gczvalue"
+						centerCustomBullets="true"
+						balloonText="观测值: [[gczdes]]"
+						type="line"
+						lineColor="0xFF0000"
+
+						customBullet="{_star}"
+						/>    
+					 
+				</Dfgc:graphs>
+				
+				<!-- It is very important to tell the category axis if it's values are date based or not.
+				In case yes, set parseDates to true. You should also set the minimum period of your data.
+				For example, if you have hourly data, set minPeriod to "hh". -->
+				<Dfgc:valueAxes>
+					<amcharts:ValueAxis min="-40" dashLength="4"   />
+				</Dfgc:valueAxes>
+				
+				<Dfgc:categoryAxis>
+					<amcharts:CategoryAxis   bottom="5" id="CategoryAxis" dateFormats="{format}" parseDates="true"  minPeriod="MM" inside="true" gridAlpha="0" color="#D8E63C" tickLength="0"/>
+				</Dfgc:categoryAxis>
+				
+				<Dfgc:chartCursor>
+					<amcharts:ChartCursor  id="ChartCursor"  cursorAlpha="0" cursorColor="#D8E63C" />                        
+				</Dfgc:chartCursor>
+				
+			</Dfgc:MyAmSerialChart>        
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="位移量">
+			<s:HGroup width="100%" height="25" top="0" verticalAlign="middle">
+				<s:Label text="点号：" />
+				<s:Label text="{dh}" />
+				<s:Label text="统编桩号：" />
+				<s:Label text="{tbzh}" />
+			</s:HGroup>
+			<Dfgc:MyAmSerialChart
+				id="wyl"
+				width="90%"
+				height="90%"
+				autoMargins="false"
+				marginRight="5" 
+				marginLeft="35"
+				marginBottom="25"
+				marginTop="30"
+				categoryField="date"
+				
+				dataProvider="{lineChartData}">
+				
+				<Dfgc:graphs>
+					<amcharts:AmGraph 
+						title="位移量"
+						valueField="wylvalue"
+						centerCustomBullets="true"
+						balloonText="位移量: [[wyldes]]"
+						type="line"
+						lineColor="0xFF0000"
+						customBullet="{_star}"
+						/> 
+					
+				</Dfgc:graphs>
+				
+				<!-- It is very important to tell the category axis if it's values are date based or not.
+				In case yes, set parseDates to true. You should also set the minimum period of your data.
+				For example, if you have hourly data, set minPeriod to "hh". -->
+				<Dfgc:valueAxes>
+					<amcharts:ValueAxis min="-5" dashLength="4"/>
+				</Dfgc:valueAxes>
+				
+				<Dfgc:categoryAxis>
+					<amcharts:CategoryAxis   dateFormats="{format}" parseDates="true"  minPeriod="MM" inside="true" gridAlpha="0" color="#D8E63C" tickLength="0"/>
+				</Dfgc:categoryAxis>
+				
+				<Dfgc:chartCursor>
+					<amcharts:ChartCursor categoryBalloonDateFormat="YYYY年MM月" cursorAlpha="0" cursorColor="#D8E63C" />                        
+				</Dfgc:chartCursor>
+				
+			</Dfgc:MyAmSerialChart>        
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="累计位移量">
+			<s:HGroup width="100%" height="25" top="0" verticalAlign="middle">
+				<s:Label text="点号：" />
+				<s:Label text="{dh}" />
+				<s:Label text="统编桩号：" />
+				<s:Label text="{tbzh}" />
+			</s:HGroup>
+			<Dfgc:MyAmSerialChart 
+				id="ljwyl"
+				width="90%"
+				height="90%"
+				autoMargins="false"
+				marginRight="5" 
+				marginLeft="35"
+				marginBottom="35"
+				marginTop="30"
+				categoryField="date"
+				
+				dataProvider="{lineChartData}">
+				
+				<Dfgc:graphs>
+					<amcharts:AmGraph
+						title="累计位移量"
+						valueField="ljwyvalue"
+						centerCustomBullets="true"
+						balloonText="累计位移量: [[ljwydes]]"
+						type="line"
+						lineColor="0xFF0000"
+						customBullet="{_star}"
+						/>                        
+				</Dfgc:graphs>
+				
+				<!-- It is very important to tell the category axis if it's values are date based or not.
+				In case yes, set parseDates to true. You should also set the minimum period of your data.
+				For example, if you have hourly data, set minPeriod to "hh". -->
+				<Dfgc:valueAxes>
+					<amcharts:ValueAxis min="-5"  dashLength="4"/>
+				</Dfgc:valueAxes>
+				
+				<Dfgc:categoryAxis>
+					<amcharts:CategoryAxis dateFormats="{format}" parseDates="true"  minPeriod="MM" inside="true" gridAlpha="0" color="#D8E63C" tickLength="0"/>
+				</Dfgc:categoryAxis>
+				
+				<Dfgc:chartCursor>
+					<amcharts:ChartCursor categoryBalloonDateFormat="YYYY年MM月" cursorAlpha="0" cursorColor="#D8E63C"  />                        
+				</Dfgc:chartCursor>
+				
+			</Dfgc:MyAmSerialChart>        
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+</mx:TitleWindow>

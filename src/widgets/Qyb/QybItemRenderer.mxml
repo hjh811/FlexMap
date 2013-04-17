@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 	
+				autoDrawBackground="false"
+				buttonMode="true"
+				click="itemrenderer_clickHandler(event)"
+				dataChange="itemrenderer_dataChangeHandler(event)"
+				minHeight="40"
+				useHandCursor="true">
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			private const QYB_CLICK:String = "QybClick";
+			
+			private const QYB_SHOW:String = "QybShow";
+			
+			[Bindable]
+			private var qyb:Qyb;
+			
+			private function itemrenderer_dataChangeHandler(event:FlexEvent):void
+			{
+				qyb = data as Qyb;
+			}
+			
+			private function itemrenderer_clickHandler(event:MouseEvent):void
+			{
+				dispatchEvent(new Event(QYB_CLICK, true)); // bubbles
+			}
+			
+			private function showqyb(event:MouseEvent):void
+			{
+				event.stopPropagation(); // don't let this click event go up to the ItemRenderer
+				dispatchEvent(new Event(QYB_SHOW, true)); // bubbles
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="hovered"/>
+	</s:states>
+	
+	<!-- border -->
+	<s:Rect left="1" right="1" top="0" bottom="0"
+			radiusX="4"
+			radiusY="4">
+		<s:stroke>
+			<s:SolidColorStroke alpha="{getStyle('borderAlpha')}"
+								color="{getStyle('borderColor')}"
+								weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	
+	<!-- background fill -->
+	<s:Rect left="2" right="2" top="2" bottom="2"
+			radiusX="4"
+			radiusY="4">
+		<s:fill>
+			<s:SolidColor alpha="0.3"
+						  alpha.hovered="0.8"
+						  color.hovered="{getStyle('rollOverColor')}"
+						  color.normal="{getStyle('contentBackgroundColor')}"/>
+		</s:fill>
+	</s:Rect>
+	
+	<mx:Image left="5"
+			  maxHeight="20"
+			  maxWidth="20"
+			  source="{qyb.icon}"
+			  verticalCenter="0">
+		<mx:filters>
+			<mx:GlowFilter alpha="0.5"
+						   blurX="10"
+						   blurY="10"
+						   color="#000000"/>
+		</mx:filters>
+	</mx:Image>
+	<s:VGroup height="100%"
+			  left="30"  right="40"
+			  verticalAlign="middle">
+		<s:Label width="100%"
+				 fontWeight="bold"
+				 maxDisplayedLines="1"
+				 text="{qyb.name}" text.hovered="{qyb.name}"/>
+		<s:Label width="100%"
+				 fontWeight="normal"
+				 maxDisplayedLines="-1"
+				 text="{qyb.gcsj}" text.hovered="{qyb.gcsj}"/>
+	</s:VGroup>
+	
+	<mx:Image width="20" height="20"
+			  right="25"
+			  click="showqyb(event)"
+			  source="assets/images/w_link.png"
+			  verticalCenter="0"
+			  visible="true"/>
+</s:ItemRenderer>
