@@ -933,7 +933,7 @@
 				httpservice.addEventListener(ResultEvent.RESULT,resultHandler);
 				httpservice.method = "POST";
 				var param:Object = new Object;
-				param.s = "select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.isnew = 1 and t1.userid = t2.id order by sbsy desc";
+				param.s = "select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
 				httpservice.send(param);
 			}
 			
@@ -944,7 +944,7 @@
 				http.addEventListener(ResultEvent.RESULT,wzResultHandler);
 				http.method = "POST";
 				var p:Object = new Object;
-				p.s = "select 'wz' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd, t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.isnew = 1 and t1.userid = t2.id order by sbsy desc";
+				p.s = "select 'wz' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd, t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
 				http.send(p);
 			}
 			
@@ -1083,9 +1083,9 @@
 				http.method = "POST";
 				var p:Object = new Object;
 				if(typeComb.selectedItem.toString() == "巡查上报")
-					p.s = "select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc";
+					p.s = "select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc";
 				else
-					p.s = "select 'wz' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd, t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc";
+					p.s = "select 'wz' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc";
 				http.send(p);
 				
 			}
@@ -1188,9 +1188,9 @@
 						</mx:dataProvider>
 					</mx:ComboBox>
 					<s:Label text="时间:"/>
-					<mx:DateField id="queryStartDate" yearNavigationEnabled="true" showToday="true" width="90" formatString="YYYY-MM-DD"/>
+					<mx:DateField id="queryStartDate" yearNavigationEnabled="true" showToday="true" width="90" formatString="YYYY-MM-DD" selectedDate="{new Date}"/>
 					<s:Label text="至"/>
-					<mx:DateField id="queryEndDate" yearNavigationEnabled="true" showToday="true" width="90" formatString="YYYY-MM-DD"/>
+					<mx:DateField id="queryEndDate" yearNavigationEnabled="true" showToday="true" width="90" formatString="YYYY-MM-DD" selectedDate="{new Date}"/>
 				</s:HGroup>
 				<s:HGroup>
 					<s:Button label="查询" width="80" click="queryHistoryRecord()"/>
@@ -1198,10 +1198,10 @@
 				</s:HGroup>
 				<mx:DataGrid id="queryDataGrid" width="100%" height="100%" doubleClick="resoultData_doubleClickHandler(event)" doubleClickEnabled="true" >
 					<mx:columns>
-						<mx:DataGridColumn headerText="编号" dataField="bh"/>
+						<mx:DataGridColumn headerText="编号" dataField="bh" width="60"/>
 						<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
-						<mx:DataGridColumn headerText="发送时间" dataField="sbsy"/>
-						<mx:DataGridColumn headerText="巡查员" dataField="xdy"/>
+						<mx:DataGridColumn headerText="发送时间" dataField="sbsy" width="120"/>
+						<mx:DataGridColumn headerText="巡查员" dataField="xdy" width="60"/>
 					</mx:columns>
 				</mx:DataGrid>
 			</s:VGroup>
@@ -1280,7 +1280,7 @@
 					<s:NavigatorContent width="100%"  height="100%" label="巡查上报">
 						<mx:DataGrid id="rcDataGrid" styleName="dataGridStyle" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)">
 								<mx:columns>
-									<mx:DataGridColumn headerText="编号" dataField="bh"/>
+									<mx:DataGridColumn headerText="编号" dataField="bh" width="60"/>
 									<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
 									<mx:DataGridColumn headerText="发送时间" dataField="sbsy"/>
 									<mx:DataGridColumn headerText="巡查员" dataField="xdy"/>
@@ -1290,7 +1290,7 @@
 					<s:NavigatorContent  width="100%" height="100%" label="违章上报">
 						<mx:DataGrid id="wzDataGrid" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)">
 							<mx:columns>
-								<mx:DataGridColumn headerText="编号" dataField="bh"/>
+								<mx:DataGridColumn headerText="编号" dataField="bh" width="60"/>
 								<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
 								<mx:DataGridColumn headerText="发送时间" dataField="sbsy"/>
 								<mx:DataGridColumn headerText="巡查员" dataField="xdy"/>

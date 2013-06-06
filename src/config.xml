@@ -9,9 +9,9 @@
     </style>
     <!-- replace the following url with your own geometryservice -->
      <!--<servletcontext>http://10.23.108.104/zjb</servletcontext>-->
-    <servletcontext>http://localhost:8080/zjb</servletcontext>  
-    <geometryservice url="http://10.23.108.104:8399/ArcGIS/rest/services/Geometry/GeometryServer" />
-	
+    <servletcontext>http://10.23.108.104/zjb</servletcontext>  
+    <geometryservice url="http://localhost:6080/ArcGIS/rest/services/Geometry/GeometryServer" />
+	<identifyIds>0,1,2,3,5</identifyIds>
     <!-- UI elements -->
     <widget left="10"  top="50"    config="widgets/Navigation/NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf"/>
     <widget left="0"  top="50"     url="widgets/Navigation/ToolbarWidget.swf"/>
@@ -27,18 +27,18 @@
             <!--<layer label="基础地图" type="custom" visible="true"  alpha="1"  icon="assets/images/base/base.jpg"
                    url="http://10.23.108.104:8399/arcgiscache/DFDXT/Layers/_alllayers"/>-->
             <layer label="规划处基础地形(09年)" type="custom" visible="false"  alpha="1"  icon="assets/images/base/streets09.jpg"
-                   url="http://10.23.108.65:8088/gzwater/GHCDX/Layers/_alllayers"/>
+                   url="http://10.23.108.77:8088/gzwater/GHCDX/Layers/_alllayers"/>
             <layer label="全市水系图" type="custom" visible="false"  alpha="1"  icon="assets/images/base/shuixi.jpg"
-                   url="http://10.23.108.65:8088/gzwater/AllWater/Layers/_alllayers"/>
+                   url="http://10.23.108.77:8088/gzwater/AllWater/Layers/_alllayers"/>
             <layer label="规划处影像图(09年)" type="custom" visible="false"  alpha="1"  icon="assets/images/base/imagery09.jpg"
-                   url="http://10.23.108.65:8088/gzwater/slsjzx110303allyxt/Layers/_alllayers"/>
+                   url="http://10.23.108.77:8088/gzwater/slsjzx110303allyxt/Layers/_alllayers"/>
             <layer label="规划处影像图(02年)" type="custom" visible="false"  alpha="1"  icon="assets/images/base/imagery02.jpg"
-                   url="http://10.23.108.65:8088/gzwater/GhcWater/Layers/_alllayers"/>
+                   url="http://10.23.108.77:8088/gzwater/GhcWater/Layers/_alllayers"/>
 
         </basemaps>
         <operationallayers>
             <layer label="堤防专题图" type="dynamic" visible="true" alpha="1" 
-                   url="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer"/>
+                   url="http://localhost:6080/ArcGIS/rest/services/DF/MapServer"/>
         </operationallayers>
     </map>
 
@@ -64,8 +64,8 @@
                 icon="assets/images/statistics.png"
                 config="widgets/widgetsConfig/StatisticWidget.xml"
                 url="widgets/statistic/StatisticWidget.swf"/>
-        <widget url="widgets/Dfgc/DfgcWidget.swf" config="widgets/Dfgc/DfgcWidget.xml" top="120" left="10" icon="assets/images/i_webcam.png" label="提防观测"/>
-        <widget url="widgets/Qyb/QybWidget.swf" config="widgets/Qyb/QybWidget.xml" top="120" left="10" icon="assets/images/i_hydro.png" label="水位雨情"/>
+        <widget url="widgets/Dfgc/DfgcWidget.swf" config="widgets/Dfgc/DfgcWidget.xml" top="120" left="10" icon="assets/images/rain.gif" label="堤防观测"/>
+        <widget url="widgets/Qyb/QybWidget.swf" config="widgets/Qyb/QybWidget.xml" top="120" left="10" icon="assets/images/rain.gif" label="水位雨情"/>
        
         <widget label="书签"         left="430" top="90"
                 icon="assets/images/i_bookmark.png"

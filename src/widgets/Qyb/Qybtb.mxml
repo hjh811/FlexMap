@@ -1,18 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" headerHeight="25" title="晴雨表"
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" headerHeight="25" title=""
 				xmlns:s="library://ns.adobe.com/flex/spark" 
 				xmlns:viewer="com.esri.viewer.*"
 				xmlns:esri="http://www.esri.com/2008/ags"
-				xmlns:mx="library://ns.adobe.com/flex/mx" layout="absolute" width="650"
-				height="400" showCloseButton="true" close="PopUpManager.removePopUp(this)"
-				borderVisible="true">
+				xmlns:mx="library://ns.adobe.com/flex/mx" layout="absolute" width="900"
+				height="600" showCloseButton="true" close="PopUpManager.removePopUp(this)"
+				borderVisible="true" xmlns:amcharts="http://www.amcharts.com/com_internal" xmlns:Dfgc="widgets.Dfgc.*">
 	
 	
 	<fx:Script>
 		<![CDATA[
+			import com.esri.ags.Graphic;
+			
+			import mx.collections.XMLListCollection;
 			
 			import flash.utils.flash_proxy;
-			import com.esri.ags.Graphic;
+			
+			import mx.charts.series.LineSeries;
+			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.events.CloseEvent;
 			import mx.managers.PopUpManager;
@@ -32,42 +37,102 @@
 			[Bindable]
 			public var times:String ="";
 			
-			public function jylsel():void
+			[Bindable]
+			private var lineChartData:ArrayCollection = new ArrayCollection([
+				{date:new Date(2009,10,2),value:5},
+				{date:new Date(2009,10,3),value:15},
+				{date:new Date(2009,10,4),value:13},
+				{date:new Date(2009,10,5),value:17},
+				{date:new Date(2009,10,6),value:15},
+				{date:new Date(2009,10,9),value:19},
+				{date:new Date(2009,10,10),value:21},
+				{date:new Date(2009,10,11),value:20},
+				{date:new Date(2009,10,12),value:20},
+				{date:new Date(2009,10,13),value:19},
+				{date:new Date(2009,10,16),value:25},
+				{date:new Date(2009,10,17),value:24},
+				{date:new Date(2009,10,18),value:26},
+				{date:new Date(2009,10,19),value:27},
+				{date:new Date(2009,10,20),value:25},
+				{date:new Date(2009,10,23),value:29},
+				{date:new Date(2009,10,24),value:28},
+				{date:new Date(2009,10,25),value:30},
+				{date:new Date(2009,10,26),value:72},
+				{date:new Date(2009,10,27),value:43},
+				{date:new Date(2009,10,30),value:31},
+				{date:new Date(2009,11,1),value:30},
+				{date:new Date(2009,11,2),value:29},
+				{date:new Date(2009,11,3),value:27},
+				{date:new Date(2009,11,4),value:26}
+			]);  //测试数据
+			
+			private function query():void
 			{
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=hisSW";
+				httpservice.method = "POST";
+				httpservice.addEventListener(ResultEvent.RESULT, httpResultHandler);
+				httpservice.resultFormat = "e4x";
+				var str:String = this.title;
 				
-					jyl.selected=true;
-					ljjyl.selected=false;
-				
-			}
-			public function ljjylsel():void
-			{
-				
-					ljjyl.selected=true;
-					jyl.selected=false;
-
+				var paramOjb:Object = new Object;
+				paramOjb.xml = str;
+				httpservice.send(paramOjb);
 			}
 			
-			
+			private function httpResultHandler(event:ResultEvent):void
+			{
+				if(event.result!=null)
+				{
+					var xml:XML = XML(event.result);
+					var rows:XMLList = xml..row;
+					linechart.dataProvider = new XMLListCollection(rows);
+					dataGrid.dataProvider = rows;
+				}
+			}
+				
 		]]>
 	</fx:Script>
 	<fx:Declarations>
 		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
 	</fx:Declarations>
-	<s:HGroup width="95%" verticalAlign="middle" height="30" top="5" left="14" visible="true" >
-			
+	<s:HGroup width="95%" verticalAlign="middle" height="30" top="5" left="10" visible="true" >
+		<s:Label text="来报时间："/>
+		<mx:DateField selectedDate="{new Date}" formatString="YYYY-MM-DD" width="100" yearNavigationEnabled="true"/>	
+		<s:Label text="至"/>
+		<mx:DateField selectedDate="{new Date}" formatString="YYYY-MM-DD" width="100" yearNavigationEnabled="true"/>	
+		<s:Button label="查询" click="query()"/>
     </s:HGroup>
-	<s:HGroup width="95%" verticalAlign="middle" height="95%" top="35" left="14" visible="true" >
-		<s:VGroup width="20%"  height="95%"  left="14" visible="true" >
-			<mx:RadioButton  id="jyl" label="降雨量" selected="true" change="jylsel()"/>
-			<mx:RadioButton id="ljjyl" label="累计降雨量" selected="false" change="ljjylsel()"/>
+	<s:HGroup width="100%" verticalAlign="middle" height="100%" top="35" left="10" bottom="5" right="10" visible="true" >
+		<s:VGroup height="100%" left="14" visible="true" >
+			<mx:DataGrid height="100%" id="dataGrid">
+				<mx:columns>
+					<mx:DataGridColumn headerText="测站" dataField="SF_SWB_ZM" width="50"/>
+					<mx:DataGridColumn headerText="水位值" dataField="U_ST_STWTST_LV" width="70"/>
+					<mx:DataGridColumn headerText="来报时间" dataField="U_ST_STWTST_TM"  width="120"/>
+				</mx:columns>
+			</mx:DataGrid>
 		</s:VGroup>
-		<s:VGroup width="70%"  height="95%"  left="14" visible="true" >
-			<s:HGroup width="95%"  height="30"  visible="true" >
-				<s:Label id="tbname" text="降雨量" />
-				<s:Label id="tbunit" text="(单位:毫米)" />
-			</s:HGroup>
-			
-		</s:VGroup>
+		<mx:VBox width="100%"
+				 height="98%" backgroundColor="#e8f2fe" right="10" bottom="5">
+			<Dfgc:MyAmSerialChart id="linechart" width="100%" height="100%" categoryField="U_ST_STWTST_TM" zoomOutText="全部">
+				<Dfgc:graphs>
+					<amcharts:AmGraph id="g0" balloonText="[[value]]"  valueField="U_ST_STWTST_LV" categoryField="U_ST_STWTST_TM" type="line" valueAxis="{v1}" fillColors="[#FF6600]" fillAlphas="[0.1]" showBalloon="true" balloonColor="#009dff" lineThickness="2"  />
+				</Dfgc:graphs>
+				<Dfgc:valueAxes>
+					<amcharts:ValueAxis precision="2" tickLength="4" title="水位值" id="v1" axisColor="#FF6600" axisThickness="2" axisAlpha="0.8"/>
+				</Dfgc:valueAxes>
+				<Dfgc:categoryAxis>
+					<amcharts:CategoryAxis title="时间" axisColor="#FCD202" axisThickness="2" labelsEnabled="false" gridCount="13" gridColor="haloBlue"  />
+				</Dfgc:categoryAxis>
+				<Dfgc:chartCursor>
+					<amcharts:ChartCursor cursorPosition="mouse" categoryBalloonColor="#009dff"  categoryBalloonAlpha="0.5"  categoryBalloonDateFormat="YYYY-MM-DD"/>
+				</Dfgc:chartCursor>
+				<Dfgc:chartScrollbar>
+					<amcharts:ChartScrollbar height="30" graph="{g0}" backgroundColor="#ffffff" selectedGraphFillColor="#009dff" selectedBackgroundColor="#FF6600" selectedBackgroundAlpha="0.2" graphFillColor="#FF6600" graphLineColor="haloBlue"/>
+				</Dfgc:chartScrollbar>
+			</Dfgc:MyAmSerialChart>
+		</mx:VBox>
 	</s:HGroup>
 	
 </mx:TitleWindow>

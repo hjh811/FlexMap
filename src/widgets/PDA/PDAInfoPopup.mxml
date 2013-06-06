@@ -206,6 +206,7 @@
 
             private function closeInfo():void
             {
+				infoContainer.removeEventListener(MouseEvent.ROLL_OUT, MouseOutRemoveHandler);
                 infoData = null;
 				this.map.removeChild(this);
             }

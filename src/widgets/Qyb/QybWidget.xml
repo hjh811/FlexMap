@@ -1,14 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <labels>
-        <gcbglabel>观测报告</gcbglabel>
-        <gcdlabel>观测堤段</gcdlabel>
-    </labels>
-    <QueryLayer>
-	    <layerid>http://localhost/ArcGIS/rest/services/tbzh/MapServer/14</layerid>
-	</QueryLayer>
-	<MODULEDATA>
-	    <module id = "1" title="观测报告" icon="assets/images/statistics.png">true</module>
-	    <!--<module id = "2" title="观测堤段" icon="assets/images/i_pin2.png">true</module>	 -->   
-	</MODULEDATA>
+  <Station name="黄埔" x="444482.84308693744" y="2554865.5848788335"></Station>
+  <Station name="中大" x="427634.5003808944" y="2556566.9016450164"></Station>
+  <Station name="鸦岗" x="416376.49414065684" y="2569587.4771597916"></Station>
 </configuration>

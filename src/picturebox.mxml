@@ -2,17 +2,24 @@
 <s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
 			   xmlns:s="library://ns.adobe.com/flex/spark" 
 			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600" applicationComplete="app(event)" 
-			    >
+			    > 
 	<s:layout>
 		<s:BasicLayout/>
 	</s:layout>
 
 	<fx:Script>
 		<![CDATA[
-			import mx.utils.URLUtil;
+			import mx.controls.Alert;
 			import mx.events.FlexEvent;
+			import mx.graphics.ImageSnapshot;
+			import mx.graphics.codec.PNGEncoder;
+			import mx.printing.FlexPrintJob;
+			import mx.printing.FlexPrintJobScaleType;
+			import mx.utils.URLUtil;
 			
 			import spark.components.Button;
+			import spark.components.VGroup;
+			import spark.primitives.BitmapImage;
 			protected function app(event:FlexEvent):void
 			{
 				var url:String =  ExternalInterface.call("window.location.href.toString");
@@ -59,6 +66,62 @@
 				angle += 90;                
 				rotate.play();
 			
+			}
+			
+			private function print():void
+			{
+				var printJob:FlexPrintJob = new FlexPrintJob();
+				printJob.printAsBitmap = false;
+				if (printJob.start())
+				{
+					var h:Number = printJob.pageHeight;
+					var w:Number = printJob.pageWidth;
+//					//VGROUP
+					var printBox:VGroup = new VGroup();
+					printBox.styleName = "PrintBox";
+					printBox.width = this.width;
+					this.addElement(printBox); // add now to workaround https://bugs.adobe.com/jira/browse/SDK-26906
+					try
+					{
+						buttonGroup.visible = false;
+						var bmpMap:BitmapData = ImageSnapshot.captureBitmapData(this);
+						var printImg:BitmapImage = new BitmapImage();
+						printImg.smooth = true;
+						printImg.source = bmpMap;
+						printBox.addElement(printImg);
+						printJob.addObject(printBox, FlexPrintJobScaleType.SHOW_ALL);
+						printJob.send();
+						bmpMap.dispose();
+					}
+					catch (error:Error)
+					{
+						Alert.show(error.toString());
+						buttonGroup.visible = true;
+					}
+					finally
+					{
+						this.removeElement(printBox);
+						buttonGroup.visible = true;
+					}
+				}
+			}
+			
+			private function download():void
+			{
+//				var bitmapData:BitmapData = new BitmapData(img.contentWidth, img.contentHeight);
+//				bitmapData.draw(img,new Matrix());
+//				var file:FileReference = new FileReference();
+//				var png:PNGEncoder = new PNGEncoder();
+//				var ba1:ByteArray = png.encode(bitmapData);
+////				file.save(img.source,"1.png");
+//				
+				var request:URLRequest = new URLRequest("http://local:8080/attachment/download.jsp");
+				request.method=URLRequestMethod.POST;
+				var vars: URLVariables = new URLVariables();
+				vars["url"] = "/地质钻孔/东涌水闸至广州南海交界处段(初步设计阶段)/广州市珠江堤岸防护工程(东涌水闸至广州南海交界处段)_页面_033.jpg";
+				request.data= vars;
+				navigateToURL(request,"_blank"); //因为要浏览器触发下载事件，所以就不用异步方式打开连接
+//				ExternalInterface.call("SaveAsFlex",this.img.source.toString());
 			}
 //			
 //			private var zoom:Zoom;  
@@ -157,9 +220,12 @@
 				 buttonMode="true"  width="600" height="500"
 				 mouseMove="dragEnd(event)"  mouseDown="dragStart(event)"  />
 	</s:VGroup>-->
-
-	<mx:Image id="img" source="03.jpg" width="100%" height="100%"/>
-	<s:HGroup paddingLeft="10" paddingTop="5" verticalAlign="middle">
+	<s:Group id="container" width="100%" height="100%">
+		<mx:Image id="img" source="http://localhost:8080/attachment/地质钻孔//东涌水闸至广州南海交界处段(初步设计阶段)/广州市珠江堤岸防护工程(东涌水闸至广州南海交界处段)_页面_033.jpg" width="100%" height="100%"/>
+	</s:Group>
+	<s:HGroup id="buttonGroup" paddingLeft="10" paddingTop="5" verticalAlign="middle">
+		<mx:Button click="print()" label = "打印"/>
+		<mx:Button click="download()" label = "下载"/>
 		<mx:Button click="rotateImage()" label = "旋转"/>
 		<!--<s:HSlider id="hslider" width="100"
 		height="10"

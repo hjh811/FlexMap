@@ -67,13 +67,12 @@
 					<fx:Object action="area"
 							   imageIcon="assets/images/1019.png"
 							   label="面积测量"/>
+					<fx:Object action="clear"
+							   imageIcon="assets/images/i_clear.png"
+							   label="地图清理"/> 
 					<fx:Object action="identify"
 							   imageIcon="assets/images/i_about.png"
 							   label="信息查看"/>
-					<fx:Object action="clear"
-							   imageIcon="assets/images/i_clear.png"
-							   label="地图清理"/>
-
 				</s:ArrayCollection>
 			</s:dataProvider>
 		</s:ButtonBar>

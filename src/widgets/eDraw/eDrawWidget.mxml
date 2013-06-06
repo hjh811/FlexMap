@@ -1160,20 +1160,20 @@ Info on previous versions is in the ReadMe.txt
 			
 			private function measureGeometry(geom:Geometry):void
 			{
-				if(geom.type == Geometry.MAPPOINT && lastDrawnGraphic.attributes.wkid != map.spatialReference.wkid){
-					geometryService.project([geom], new SpatialReference(lastDrawnGraphic.attributes.wkid));
-					return;
-				}
-				var wkid:Number = geom.spatialReference.wkid;
-				if ((wkid == EPSG_GEOGRAPHIC) || (isWebMercator(wkid)))
-				{
-					calculateAreasAndLengths(geom);
-				}
-				else
-				{
-					var geographicSpatialReference:SpatialReference = new SpatialReference(EPSG_GEOGRAPHIC);
-					geometryService.project([ geom ], geographicSpatialReference);
-				}
+//				if(geom.type == Geometry.MAPPOINT && lastDrawnGraphic.attributes.wkid != map.spatialReference.wkid){
+//					geometryService.project([geom], new SpatialReference(lastDrawnGraphic.attributes.wkid));
+//					return;
+//				}
+//				var wkid:Number = geom.spatialReference.wkid;
+//				if ((wkid == EPSG_GEOGRAPHIC) || (isWebMercator(wkid)))
+//				{
+//					calculateAreasAndLengths(geom);
+//				}
+//				else
+//				{
+//					var geographicSpatialReference:SpatialReference = new SpatialReference(EPSG_GEOGRAPHIC);
+//					geometryService.project([ geom ], geographicSpatialReference);
+//				}
 			}
 			
 			private function updateMeasureLabelPosition(geom:Geometry):void

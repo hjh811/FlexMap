@@ -10,7 +10,7 @@
 					xmlns:components="com.esri.viewer.components.*"
 					xmlns:Dfgc="widgets.Dfgc.*"
 					x="450" y="400"
-					widgetConfigLoaded="init()" >
+					widgetConfigLoaded="init()" > 
 	<fx:Declarations>
 		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
 	</fx:Declarations>
@@ -55,6 +55,7 @@
 			import mx.collections.ArrayCollection;
 			import mx.collections.ArrayList;
 			import mx.controls.Alert;
+			import mx.effects.Move;
 			import mx.events.CloseEvent;
 			import mx.managers.PopUpManager;
 			import mx.rpc.AsyncResponder;
@@ -135,13 +136,13 @@
 				gcdLabel=configXML.labels.gcdlabel || "观测点";
 				layerid=configXML.QueryLayer.layerid || "";
 //				wTemplate.addTitlebarButton(ICON_URL + "i_home.png", "主菜单", showMain);
-				wTemplate.addTitlebarButton(ICON_URL + "statistics.png", gcbgLabel, gcbglod,false);
+//				wTemplate.addTitlebarButton(ICON_URL + "statistics.png", gcbgLabel, gcbglod,false);
 //				wTemplate.addTitlebarButton(ICON_URL + "i_pin2.png", gcdLabel, gcdlod,false);
 				addgcbg();
 			}
 			catch( e:Error)
 			{
-				Alert.show(e.toString());
+//				Alert.show(e.toString());
 			}
 				
 				
@@ -329,6 +330,8 @@
 				
 			}
 			
+			
+			private var movePlayer:Move = new Move;
 			private function lodgcdhandler(event:ResultEvent):void
 			{
 				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
@@ -346,7 +349,10 @@
 				ddcl.layerid=layerid;
 				ddcl.rcDataGrid.addEventListener(MouseEvent.CLICK, datagridclick);
 				ddcl.rcDataGrid.dataProvider=jsonValues;
+				movePlayer.xTo = 10;
+				movePlayer.yTo == 150;
 				PopUpManager.centerPopUp(ddcl);
+				movePlayer.play([ddcl]);
 				
 			}
 			private function datagridclick(event:Event):void
@@ -429,7 +435,7 @@
 			}
 			private function queryTaskErr(event:FaultEvent ):void
 			{
-				Alert.show(event.fault.faultString);
+//				Alert.show(event.fault.faultString);
 			}
 			private var sel:Graphic=null;
 			private var infoPupop:DfgcInfoPopup=null;
@@ -609,7 +615,7 @@
 			</s:HGroup>
 			<s:HGroup width="100%" verticalAlign="middle" height="25" top="30">
 				<s:Label text="报告名称" left="20"/> 
-				<s:TextInput id="bgmc" width="280"  text="{dfbg.name}" editable="{showedit}"/>
+				<s:TextInput id="bgmc" width="200"  text="{dfbg.name}" editable="{showedit}"/>
 				<s:Label text="第" left="10"/> 
 				<s:TextInput id="times" width="20"  text="{dfbg.times}" editable="{showedit}"/>
 				<s:Label text="次" left="10"/> 
@@ -619,11 +625,11 @@
 			<s:VGroup width="100%" height="25"  top="55" >
 				<s:HGroup width="100%" verticalAlign="middle" height="25">
 				<s:Label text="编    号" left="20"/> 
-				<s:TextInput id="bh" width="150"  text="{dfbg.bgbh}" editable="{showedit}"/>
-					<s:Label text="时  间" left="20" width="40"/> 
+				<s:TextInput id="bh" width="100"  text="{dfbg.bgbh}" editable="{showedit}"/>
+					<s:Label text="时间" left="20" paddingLeft="15"/> 
 					<s:TextInput id="nf" width="50"  text="{dfbg.years}" editable="{showedit}"/>
 					<s:Label text="年" left="20" /> 
-					<s:TextInput id="yf" width="50"  text="{dfbg.gcyf}" editable="{showedit}"/>
+					<s:TextInput id="yf" width="20"  text="{dfbg.gcyf}" editable="{showedit}"/>
 					<s:Label text="月" left="20" /> 
 				</s:HGroup>
 				<s:HGroup width="100%" verticalAlign="middle" height="25"  visible="false">

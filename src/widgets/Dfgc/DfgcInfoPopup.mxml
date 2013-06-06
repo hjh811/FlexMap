@@ -25,7 +25,40 @@ Pop-up component used to show feature information.
 		 xmlns:flash="flash.filters.*"
 		 creationComplete="init()"
 		 currentState="">
-	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace flash "flash.filters.*";
+		.InfoCanvas
+		{
+			borderStyle: solid;
+			borderColor: #FFFFFF;
+			borderAlpha: 1;
+			borderThickness: 1;
+			cornerRadius: 4;
+			backgroundAlpha: 0.7;
+			backgroundColor: #B8B8B8;
+			dropShadowEnabled: true;
+			shadowDirection: right;
+			shadowDistance: 5;
+			horizontalScrollPolicy: off;
+			verticalScrollPolicy:off;
+		}
+		
+		.InfoTitle
+		{
+			font-weight:bold;
+			font-size:12;
+			color: #000000;
+		}
+		
+		.InfoText
+		{
+			font-size:12;
+			color: #000000;
+			font-family: Arial;
+		}
+	</fx:Style>
 	<fx:Script>
 		<![CDATA[
 			import com.esri.ags.Map;
@@ -85,9 +118,33 @@ Pop-up component used to show feature information.
 //				infoIcon.source = infoData.icon;
 				infoTitle.text ="点号:"+ infoData.dh;
 				infobh.text="统编桩号:"+infoData.tbzh;
-				infoContent.text = "观测值:"+infoData.gcz + "m";
-				infowyl.text = "位移量:"+infoData.wyl + "m";
-				infoljwy.text = "累积位移量:"+infoData.ljwy + "m";
+				if(Number(infoData.gcz) == NaN)
+				{
+					infoContent.text = "观测值:"+infoData.gcz + "m";
+				}
+				else
+				{
+					infoContent.text = "观测值:"+Number(infoData.gcz).toFixed(2) + "m";
+				}	
+				
+				if(Number(infoData.wyl) == NaN)
+				{
+					infowyl.text = "位移量:"+infoData.wyl + "m";
+				}
+				else
+				{
+					infowyl.text = "位移量:"+Number(infoData.wyl).toFixed(2) + "m";
+				}
+				
+				if(Number(infoData.ljwy) == NaN)
+				{
+					infoljwy.text = "累积位移量:"+infoData.ljwy + "m";
+				}
+				else
+				{
+					infoljwy.text = "累积位移量:"+Number(infoData.ljwy).toFixed(2) + "m";
+				}
+				
 				infosj.text=infoData.nf+"年"+infoData.yf+"月";
 				
 				//clear picture and link button

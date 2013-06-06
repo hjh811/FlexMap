@@ -6,7 +6,7 @@
 				buttonMode="true"
 				click="itemrenderer_clickHandler(event)"
 				dataChange="itemrenderer_dataChangeHandler(event)"
-				minHeight="40"
+				minHeight="60"
 				useHandCursor="true">
 	
 	<fx:Declarations>
@@ -91,10 +91,14 @@
 				 fontWeight="normal"
 				 maxDisplayedLines="-1"
 				 text="{qyb.gcsj}" text.hovered="{qyb.gcsj}"/>
+		<s:Label width="100%"
+				 fontWeight="normal"
+				 maxDisplayedLines="-1"
+				 text="{qyb.time}" text.hovered="{qyb.time}"/>
 	</s:VGroup>
 	
 	<mx:Image width="20" height="20"
-			  right="25"
+			  right="5"
 			  click="showqyb(event)"
 			  source="assets/images/w_link.png"
 			  verticalCenter="0"

@@ -157,8 +157,8 @@
 					prjFilesDir = configXML.prjfilesdir || "widgets/Snapshot/PrjFiles/";
 					prjFileLoad(map.spatialReference.wkid.toString());
 				}
-				wTemplate.addTitlebarButton(ICON_URL + "i_draw_rect.png", snapshotLabel, showStateSnapshot);
-				wTemplate.addTitlebarButton(ICON_URL + "i_options.png", optionsLabel, showStateOptions);
+//				wTemplate.addTitlebarButton(ICON_URL + "i_draw_rect.png", snapshotLabel, showStateSnapshot);
+//				wTemplate.addTitlebarButton(ICON_URL + "i_options.png", optionsLabel, showStateOptions);
 			}
 			
 			private function activateSnapshotTool(value:String):void
@@ -254,7 +254,7 @@
 					//img = imgPreview.source as Bitmap;
 				}
 				img = imgPreview.source as Bitmap;
-				switch (imgType)
+				switch ("png")
 				{
 					case "jpg":
 						var jpegEnc:JPEGEncoder = new JPEGEncoder(qualSlider.value);
@@ -350,7 +350,7 @@
 				}
 				imgPreview.source = null;
 				qualSlider.value = 50;
-				jpgRadioBtn.selected = true;
+//				jpgRadioBtn.selected = true;
 				// Resize widget
 				resizeWidget(wTemplate.minWidth,wTemplate.minHeight);
 				graphicsLayer.clear();
@@ -454,10 +454,10 @@
 						  source="assets/images/i_draw_rect.png"
 						  toolTip="{rectangleLabel}"
 						  useHandCursor="true"/>
-				<s:Button id="saveButton" label="保存" click="saveSnapshot(imgTypeGrp.selectedValue as String)" />
+				<s:Button id="saveButton" label="保存" click="saveSnapshot('png')" />
 				<s:Button id="clearButton" label="重置" click="clear()" />
 			</s:HGroup>
-			<s:Scroller id="previewScroller" width="100%" height="100%">
+			<s:Scroller id="previewScroller" width="100%" height="100%" contentBackgroundColor="0xffffff">
 				<s:Group>
 					<mx:Image id="imgPreview" />
 				</s:Group>

@@ -37,6 +37,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.esri.ags.Graphic;
+			import com.esri.ags.events.MapMouseEvent;
 			import com.esri.ags.events.QueryEvent;
 			import com.esri.ags.geometry.Extent;
 			import com.esri.ags.geometry.Geometry;
@@ -65,25 +66,43 @@
 			
 			[Bindable]
 			private var QybAL:ArrayList; 
+			private var swzAL:ArrayList;
 			private var graphicsLayer:GraphicsLayer;
 			private const ICON_URL:String = "assets/images/";
 			private var qybtb:Qybtb;
 			public function init():void
 			{
-				QybAL=new ArrayList();
-				var qyb:Qyb=new Qyb;
-				qyb.name="东圃测站点";
-				qyb.icon=ICON_URL+"i_roof_point.png";
-				qyb.gcsj="2012年10月1日"
-				QybAL.addItem(qyb);
-				QybAL.addItem(qyb);
-				QybAL.addItem(qyb);
 				graphicsLayer=new GraphicsLayer;
 				map.addLayer(graphicsLayer);
+				if(this.configXML)
+				{
+					QybAL=new ArrayList();
+					swzAL=new ArrayList();
+					var StationList:XMLList=configXML.Station;
+					for (var i:Number=0; i < StationList.length(); i++)
+					{
+						var qyb:Qyb=new Qyb;
+						qyb.name=StationList[i].@name;
+						qyb.icon=ICON_URL+"i_flag_WSK.png";
+						qyb.point = new MapPoint(StationList[i].@x,StationList[i].@y);
+						swzAL.addItem(qyb);
+
+					}
+				}
+
+				//this.map.addEventListener(MapMouseEvent.MAP_CLICK, testhandler);
 			}
+			
+			private function testhandler(event:MapMouseEvent):void
+			{
+				Alert.show(event.mapPoint.x + "," + event.mapPoint.y);
+			}
+			
+			
 			private function wTemplate_closedHandler(event:Event):void
 			{
 				graphicsLayer.visible = false;
+				clear();
 			}
 			private function wTemplate_openHandler(event:Event):void
 			{
@@ -96,12 +115,179 @@
 			{
 				
 			}
-			private function showqyb(e:Event):void
-			{    if(!qybtb==null)
-			      {PopUpManager.removePopUp(qybtb);
+			private function showqyb(event:Event):void
+			{    
+				var qyb:Qyb = ItemRenderer(event.target).data as Qyb;
+				if(qybtb!=null)
+			      {
+					PopUpManager.removePopUp(qybtb);
 			      }
-				qybtb=PopUpManager.createPopUp(this.parentApplication.parent,Qybtb,false) as Qybtb;
+				qybtb=PopUpManager.createPopUp(this.parentApplication.parent,Qybtb,true) as Qybtb;
 				PopUpManager.centerPopUp(qybtb);
+				qybtb.title = qyb.name;
+			}
+
+			protected function YQ_click(num:int):void
+			{
+					var qyb:Qyb = swzAL.getItemAt(num) as Qyb;
+					var httpservice:HTTPService = new HTTPService;
+					
+					//正式调用
+//					httpservice.url = "http://localhost:8080/WaterRain/servlet/GetDownXmlServlet?o=current";
+//					var str:String="<?xml version='1.0' encoding='UTF-8'?>";
+//					str+="<applyForm><tableName>QU1927</tableName>";
+//					str+="<size>1</size>";
+//					str+="<pageno>1</pageno>";
+//					str+="<condition>";
+//					str+="<column name='SF_YLZ_ZM' oper='like'>"+qyb.name+"</column>";
+//					str+="</condition>";
+//					str+="<order>";
+//					str+="<column name='U_ST_STRNST_TM'>desc</column>";
+//					str+="</order>";
+//					str+="</applyForm>";
+					
+					///////////////测试调用////////////////////////
+					httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=testYQ";
+					var str:String = qyb.name;
+					/////////////////////////////////////////////
+					
+					httpservice.method = "POST";
+					httpservice.resultFormat = "e4x";
+					httpservice.addEventListener(ResultEvent.RESULT, YQResultHandler);
+					var paramOjb:Object = new Object;
+					paramOjb.xml = str;
+					httpservice.send(paramOjb);
+			}
+			
+			private function YQResultHandler(event:ResultEvent):void
+			{
+				if(event.result!=null)
+				{
+					var qyb:Qyb = swzAL.getItemAt(count) as Qyb;
+					var xml:XML = XML(event.result);
+					qyb.icon=ICON_URL+"i_flag_WSK.png";
+					qyb.gcsj="雨量:" + xml..U_ST_STRNST_PRF;
+					qyb.time =xml..U_ST_STRNST_TM;
+					this.QybAL.addItem(qyb);
+					
+					var infoPupop:QYInfoPopup = new QYInfoPopup;
+					infoPupop.map = this.map;
+					infoPupop.name="QY" + qyb.name;
+					this.map.addChild(infoPupop);
+					
+					infoPupop.infoData = qyb;
+					var graphic:Graphic = new Graphic;
+					graphic.geometry = qyb.point;
+					graphic.symbol = new PictureMarkerSymbol(ICON_URL+"i_flag_WSK.png");
+					this.graphicsLayer.add(graphic);
+					
+					count++;
+					if(count<swzAL.length)
+					{
+						YQ_click(count);   //递归调用，解决异步问题
+					}
+				}
+			}
+			
+			private var count:int = 0;
+
+			private function httpResultHandler(event:ResultEvent):void
+			{
+//				Alert.show(event.result.toString());
+				if(event.result!=null)
+				{
+					var qyb:Qyb = swzAL.getItemAt(count) as Qyb;
+					var xml:XML = XML(event.result);
+					var swz:String = xml..U_ST_STWTST_LV;
+					qyb.icon=ICON_URL+"i_flag_WSK.png";
+					qyb.gcsj="水位:" + swz;
+					qyb.time =xml..U_ST_STWTST_TM;
+					this.QybAL.addItem(qyb);
+					
+					var infoPupop:QYInfoPopup = new QYInfoPopup;
+					infoPupop.map = this.map;
+					infoPupop.name="QY" + qyb.name;
+					this.map.addChild(infoPupop);
+					
+					infoPupop.infoData = qyb;
+					var graphic:Graphic = new Graphic;
+					graphic.geometry = qyb.point;
+					graphic.symbol = new PictureMarkerSymbol(ICON_URL+"i_flag_WSK.png");
+					this.graphicsLayer.add(graphic);
+					
+					count++;
+					if(count<swzAL.length)
+					{
+						SQ_click(count);   //递归调用，解决异步问题
+					}
+				}
+			}
+
+			protected function SQ_click(num:int):void
+			{
+					var qyb:Qyb = swzAL.getItemAt(num) as Qyb;
+					var httpservice:HTTPService = new HTTPService;
+					//正式调用
+//					httpservice.url = "http://localhost:8080/WaterRain/servlet/GetDownXmlServlet";					
+//					var str:String="<?xml version='1.0' encoding='UTF-8'?>";
+//					str+="<applyForm><tableName>QU1926</tableName>";
+//					str+="<size>1</size>";
+//					str+="<pageno>1</pageno>";
+//					str+="<condition>";
+//					str+="<column name='SF_SWB_ZM' oper='like'>"+qyb.name+"</column>";
+//					str+="</condition>";
+//					str+="<order>";
+//					str+="<column name='U_ST_STWTST_TM'>desc</column>";
+//					str+="</order>";
+//					str+="</applyForm>";
+
+					///////////测试调用//////////////////////////
+					httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=testSW";
+					var str:String = qyb.name;
+					///////////////////////////////////////////
+					
+					httpservice.method = "POST";
+					httpservice.addEventListener(ResultEvent.RESULT, httpResultHandler);
+					httpservice.resultFormat = "e4x";
+					
+					
+					var paramOjb:Object = new Object;
+					paramOjb.xml = str;
+					httpservice.send(paramOjb);
+			}
+
+			private function clear():void
+			{
+				graphicsLayer.clear();
+				QybAL.removeAll();
+				var InfoArray:Array=new Array();
+				var i:int;
+				for (i=0; i < map.numChildren; i++)
+				{
+					if (map.getChildAt(i).name.substr(0, 2).toUpperCase() == "QY")
+					{
+						InfoArray.push(map.getChildAt(i));
+					}
+				}
+				for (i=0; i < InfoArray.length; i++)
+				{
+					map.removeChild(InfoArray[i]);
+				}
+				InfoArray=null;
+			}
+			
+			private function startQuerySW():void
+			{
+				clear();
+				count = 0;
+				SQ_click(count);
+			}
+			
+			private function startQueryYQ():void
+			{
+				clear();
+				count = 0;
+				YQ_click(count);
 			}
 		]]>
 	</fx:Script>
@@ -111,10 +297,14 @@
 						   open="wTemplate_openHandler(event)"
 						   closed="wTemplate_closedHandler(event)">
 		
-		<s:HGroup id="main"
+		<s:VGroup id="main"
 				  width="100%" height="100%"
 				  visible="false"
 				  visible.main="true" horizontalAlign="center">
+			<s:HGroup width="100%">
+				<s:Button label="实时水位" click="startQuerySW()"/>
+				<s:Button label="实时雨情" click="startQueryYQ()"/>
+			</s:HGroup>
 			<s:Scroller width="100%" height="100%" top="20" >
 				<Qyb:QybDataGroup id="QybDG" 
 				   QybClick="clickqyb(event)"
@@ -128,7 +318,7 @@
 				</Qyb:QybDataGroup>
 			</s:Scroller>	
 			
-		</s:HGroup>
+		</s:VGroup>
 		
 		
 	</viewer:WidgetTemplate>
