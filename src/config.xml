@@ -9,7 +9,7 @@
     </style>
     <!-- replace the following url with your own geometryservice -->
      <!--<servletcontext>http://10.23.108.104/zjb</servletcontext>-->
-    <servletcontext>http://10.23.108.104/zjb</servletcontext>  
+    <servletcontext>http://172.16.49.124/zjb</servletcontext>  
     <geometryservice url="http://localhost:6080/ArcGIS/rest/services/Geometry/GeometryServer" />
 	<identifyIds>0,1,2,3,5</identifyIds>
     <!-- UI elements -->
