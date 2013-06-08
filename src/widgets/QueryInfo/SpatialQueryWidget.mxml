@@ -10,6 +10,8 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.as3xls.xls.ExcelFile;
+			import com.as3xls.xls.Sheet;
 			import com.esri.ags.Graphic;
 			import com.esri.viewer.components.ImageMedioInfo;
 			import com.esri.ags.events.DrawEvent;
@@ -196,6 +198,37 @@
 				}
 			}
 			
+			private var sheet:Sheet = null; 
+			[Bindable]
+			private var fields:Array=new Array();
+			private function ExportExcel():void
+			{
+				//				var arrC:ArrayCollection = tjDataGird.dataProvider as ArrayCollection;
+				exportToExcel(queryInfoResultAC);
+			}
+			private function exportToExcel(arrC:ArrayCollection):void
+			{
+				var dataProviderCollection:ArrayCollection=new ArrayCollection();
+				dataProviderCollection=arrC;
+				sheet=new Sheet();
+				var rowCount:int=dataProviderCollection.length;
+				sheet.resize(rowCount + 1, 1);
+				
+				fields.push("统编桩号");
+				sheet.setCell(0, 0, "统编桩号");
+				
+				
+				for (var r:int=0; r < rowCount; r++)
+				{
+					var record:QueryInfoResult=dataProviderCollection.getItemAt(r) as  QueryInfoResult;
+					sheet.setCell(r+1, 0, record.title);
+				}
+				var xls:ExcelFile=new ExcelFile();
+				xls.sheets.addItem(sheet);
+				var bytes:ByteArray=xls.saveToByteArray();
+				var fr:FileReference=new FileReference();
+				fr.save(bytes, "查询结果.xls");
+			}
 			
 			private function drawIcon_rollOverHandler(event:MouseEvent):void
 			{
@@ -278,6 +311,7 @@
 			<s:HGroup  verticalAlign="middle" horizontalAlign="center" width="100%">
 				<s:Label text="堤防设施:"/>
 				<mx:ComboBox id="layerComb" labelField="@name" width="120"  height="23" fontFamily="宋体"/>
+				<s:Button   width="50" height="23" label="导出" click="ExportExcel()"/>
 			</s:HGroup>
 			<s:HGroup id="drawImageGroup"
 					  width="100%"
