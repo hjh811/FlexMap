@@ -235,7 +235,10 @@
 			private function ExportExcel():void
 			{
 				var arrC:ArrayCollection = tjDataGird.dataProvider as ArrayCollection;
+				if(arrC.length>0)
+				{
 				exportToExcel(arrC);
+				}
 			}
 			private function exportToExcel(arrC:ArrayCollection):void
 			{
