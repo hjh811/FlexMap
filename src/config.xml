@@ -38,7 +38,7 @@
         </basemaps>
         <operationallayers>
             <layer label="堤防专题图" type="dynamic" visible="true" alpha="1" 
-                   url="http://localhost:6080/ArcGIS/rest/services/DF/MapServer"/>
+                   url="http://localhost:6080/arcgis/rest/services/zh/MapServer"/>
         </operationallayers>
     </map>
 
