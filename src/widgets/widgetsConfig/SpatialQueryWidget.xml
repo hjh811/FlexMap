@@ -21,11 +21,16 @@
 		<module id = "5" title="巡查统计" icon="assets/images/i_table.png">true</module>
 	</MODULEDATA>
 	<QueryLayer>
-	    <layer name="排水口" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/0" field="TBZH"></layer>
+	    <!-- <layer name="排水口" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/0" field="TBZH"></layer>
 	   	<layer name="爬梯" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/2" field="TBZH"></layer>
 	    <layer name="警示设施" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/3" field="TBZH"></layer>
 	    <layer name="横断面" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/5" field="TBZH"></layer>
-	    <layer name="水闸" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/1" field="name"></layer>
+	    <layer name="水闸" layerid="http://10.23.108.104:8399/ArcGIS/rest/services/DFDATA/MapServer/1" field="name"></layer>-->
+	     <layer name="排水口" layerid="http://localhost:6080/arcgis/rest/services/zh/MapServer/0" field="TBZH"></layer>
+	   	<layer name="爬梯" layerid="http://localhost:6080/arcgis/rest/services/zh/MapServer/2" field="TBZH"></layer>
+	    <layer name="警示设施" layerid="http://localhost:6080/arcgis/rest/services/zh/MapServer/3" field="TBZH"></layer>
+	    <layer name="横断面" layerid="http://localhost:6080/arcgis/rest/services/zh/MapServer/5" field="TBZH"></layer>
+	    <layer name="水闸" layerid="http://localhost:6080/arcgis/rest/services/zh/MapServer/1" field="name"></layer>
 	</QueryLayer>
 	<Interval>30</Interval>  <!-- PDA超时 间隔 (单位:分钟) -->
 </configuration>

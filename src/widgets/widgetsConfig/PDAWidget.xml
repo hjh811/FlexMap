@@ -25,5 +25,6 @@
 	<SERVICES>
 		<SERVICE name="sendmsgservice" url="http://10.23.97.247/androidpn/notification.do?action=send"></SERVICE> 
 	</SERVICES>
+	<fsdxSERVICE>http://10.23.97.247/androidserver/servlet/fsdx</fsdxSERVICE>
 	<Interval>30</Interval>  <!-- PDA超时 间隔 (单位:分钟) -->
 </configuration>
