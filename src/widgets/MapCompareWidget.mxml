@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" xmlns:toc="com.esri.viewer.components.toc.*"
+				   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:viewer="com.esri.viewer.*"   creationComplete="init()"  layout="absolute" width="100%" height="100%" xmlns:esri="http://www.esri.com/2008/ags">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.events.ExtentEvent;
+			import com.esri.viewer.AppEvent;
+			import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
+			import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
+			import com.esri.ags.layers.Layer;
+			import com.esri.viewer.utils.CostumTiledMapServiceLayer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			
+			import spark.components.supportClasses.ListBase;
+			
+			import widgets.MapSwitchModel.Basemap;
+
+			
+			[Bindable]
+			private var basemapList:ArrayList;
+			private var basemapSelectionComponent:ListBase;
+			private var previousConfigBasemapsTotal:int;
+			[Bindable]
+			private var shouldShowOpLayers1:Boolean = false;
+			[Bindable]
+			private var shouldShowBasemaps1:Boolean = false;
+			[Bindable]
+			private var shouldShowOpLayers2:Boolean = false;
+			[Bindable]
+			private var shouldShowBasemaps2:Boolean = false;
+			private var startChange:Boolean = true;
+			private var hideSuspended:Boolean = false;
+			
+			private function init():void
+			{
+				var showThumbnails:Boolean = true;
+				if(this.configXML)
+				{
+					
+					
+				}
+				this.map1.extent = this.map.extent;
+				this.map2.extent = this.map.extent;
+				initBasemapList();
+				
+				if (basemapList.length <= 1)
+				{
+					
+				}
+				else
+				{
+					initBasemapSelectionComponent(showThumbnails);
+				}
+				
+				for each(var layer:Layer in this.map.layers)
+				{
+					if(layer is ArcGISDynamicMapServiceLayer)
+					{
+						this.map1.addLayer(layer);
+						this.map2.addLayer(layer);
+					}
+				}
+				
+				toc1.map = this.map1;
+				toc1.isMapServiceOnly = false; //gotta get this from the config file
+				toc1.excludeGraphicsLayers = true;
+				toc1.excludeLayers = getExcludeLayers();
+				toc2.map = this.map2;
+				toc2.isMapServiceOnly = false; //gotta get this from the config file
+				toc2.excludeGraphicsLayers = true;
+				toc2.excludeLayers = getExcludeLayers();
+				
+				AppEvent.addListener(AppEvent.SUSPEND_TOC_HIDE_TIMER, suspendHideListener);
+			}
+			
+			private function suspendHideListener(event:AppEvent):void
+			{
+				hideSuspended = (event.data != null);
+			}
+			
+			private function getExcludeLayers():ArrayCollection
+			{
+				var excludeLayers:ArrayCollection = getBasemapLayers();
+				return excludeLayers;
+			}
+			
+			private function getBasemapLayers():ArrayCollection
+			{
+				var result:ArrayCollection = new ArrayCollection();
+				
+				if (configData && this.configData.basemaps)
+				{
+					for (var i:int = 0; i < configData.basemaps.length; i++)
+					{
+						result.addItem(configData.basemaps[i].label);
+					}
+				}
+				
+				return result;
+			}
+			
+			private function initBasemapList():void
+			{
+				basemapList = new ArrayList();
+				var labels:Array = [];
+				for each (var basemap:Object in configData.basemaps)
+				{
+					var label:String = basemap.label;
+					if (labels.indexOf(label) == -1) // avoid duplicates using the labels
+					{
+						
+						labels.push(label);
+						var basemapItem:Basemap = new Basemap(basemap.id, label, basemap.icon, basemap.visible);
+						basemapList.addItem(basemapItem);
+						
+						switch(basemap.type)
+						{
+							case "custom":
+								var baselayer1:CostumTiledMapServiceLayer = new CostumTiledMapServiceLayer(basemap.url);
+								baselayer1.id = basemap.label;
+								baselayer1.name = basemap.label;
+								baselayer1.visible = basemap.visible;
+								this.map1.addLayer(baselayer1);
+								
+								var baselayer2:CostumTiledMapServiceLayer = new CostumTiledMapServiceLayer(basemap.url);
+								baselayer2.id = basemap.label;
+								baselayer2.name = basemap.label;
+								baselayer2.visible = basemap.visible;
+								this.map2.addLayer(baselayer2);
+								break;
+						}
+
+					}
+				}
+				previousConfigBasemapsTotal = configData.basemaps.length;
+			}
+			
+			private function initBasemapSelectionComponent(showThumbnails:Boolean):void
+			{
+//				basemapSelectionComponent = basemapGallery1;
+				preselectTopmostVisibleBasemap();
+			}
+			
+			private function preselectTopmostVisibleBasemap():void
+			{
+				var totalBasemaps:Array = basemapList.toArray().reverse();
+				for each (var basemap:Basemap in totalBasemaps)
+				{
+					if (basemap.visible)
+					{
+						basemapGallery1.selectedItem = basemap;
+						basemapGallery2.selectedItem = basemap;
+						break;
+					}
+				}
+			}
+			
+			private function basemapsButton_rollOverHandler1(event:MouseEvent):void
+			{
+				var haveBasemapsChanged:Boolean = (previousConfigBasemapsTotal != configData.basemaps.length);
+				if (haveBasemapsChanged)
+				{
+					initBasemapList();
+				}
+				startBasemapsHideTimer();
+				shouldShowBasemaps1 = true;
+			}
+			
+			private function basemapsButton_rollOverHandler2(event:MouseEvent):void
+			{
+				var haveBasemapsChanged:Boolean = (previousConfigBasemapsTotal != configData.basemaps.length);
+				if (haveBasemapsChanged)
+				{
+					initBasemapList();
+				}
+				startBasemapsHideTimer();
+				shouldShowBasemaps2 = true;
+			}
+			
+			private function startBasemapsHideTimer():void
+			{
+				if (!hideSuspended)
+				{
+					AppEvent.dispatch(AppEvent.TOC_HIDDEN);
+					shouldShowOpLayers1 = false;
+					shouldShowOpLayers2 = false;
+				}
+				shouldShowBasemaps1 = false;
+				shouldShowBasemaps2 = false;
+			}
+			
+			protected function wTemplate_closedHandler(event:Event):void
+			{
+				
+			}
+
+			protected function map1_extentChangeHandler(event:ExtentEvent):void
+			{
+				// TODO Auto-generated method stub
+				if (startChange)
+				{
+					startChange = false;
+					this.map2.extent = this.map1.extent;
+				}
+				else
+				{
+					startChange = true;
+				}
+			}
+
+
+			protected function map2_extentChangeHandler(event:ExtentEvent):void
+			{
+				// TODO Auto-generated method stub
+				if (startChange)
+				{
+					startChange = false;
+					this.map1.extent = this.map2.extent;
+				}
+				else
+				{
+					startChange = true;
+				}
+			}
+			
+			protected function opLayersContainer_clickHandler1(event:MouseEvent):void
+			{
+				startBasemapsHideTimer();
+				shouldShowOpLayers1 = true;
+			}
+			protected function opLayersContainer_clickHandler2(event:MouseEvent):void
+			{
+				startBasemapsHideTimer();
+				shouldShowOpLayers2 = true;
+			}
+			
+			private function dispatchChangeBasemapEvent1():void
+			{
+				basemapSwitch((basemapGallery1.selectedItem as Basemap).id,map1);
+			}
+			
+			private function dispatchChangeBasemapEvent2():void
+			{
+				basemapSwitch((basemapGallery2.selectedItem as Basemap).id,map2);
+			}
+			
+			///基础地图控制
+			private function basemapSwitch(layerid:String,tmpMap:Map):void
+			{
+				const id:String = layerid;
+				if (id)
+				{
+					const configBasemaps:Array = this.configData.basemaps;
+					var selectedLabel:String;
+					for (var i:uint = 0; i < configBasemaps.length; i++)
+					{
+						if (configBasemaps[i].id == id)
+						{
+							selectedLabel = configBasemaps[i].label;
+							break;
+						}
+					}
+					if (selectedLabel)
+					{
+						// turn on the selected basemap layers (more than one layer can have the same label)
+						var layers:ArrayCollection = tmpMap.layers as ArrayCollection;
+						for (i = 0; i < configBasemaps.length; i++)
+						{
+							var basemapLabel:String = configBasemaps[i].label;
+							for each (var layer:Layer in layers)
+							{
+								if (layer.id == basemapLabel)
+								{
+									if (layer.id == selectedLabel)
+									{
+										layer.visible = true;
+									}
+									else
+									{
+										layer.visible = false;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<viewer:states>
+		<s:State name="main"/>
+		<s:State name="SSCX"/> 
+		<s:State name="FSXX"/>
+		<s:State name="ZBDW"/>
+		<s:State name="QYDW"/>
+	</viewer:states>
+	
+	<viewer:transitions>
+		<s:Transition autoReverse="true" toState="*">
+			<s:Fade targets="{[main]}"/>
+		</s:Transition>
+	</viewer:transitions>
+	<viewer:WidgetTemplate id="wTemplate" enableMinimizeButton="false" enableDraging="false" enableIcon="false" 
+						   
+						   width="100%" height="100%" closed="wTemplate_closedHandler(event)">
+		<s:HGroup id="main"
+				  width="100%" height="100%"
+				  visible="false"
+				  visible.main="true" horizontalAlign="center">
+			<mx:Canvas width="50%" height="100%" backgroundColor="0xffffff" borderColor="0x000000" borderStyle="solid">
+				
+			<esri:Map id="map1" crosshairVisible="true" width="100%" height="100%" logoVisible="false" extentChange="map1_extentChangeHandler(event)" >
+				
+			</esri:Map>
+			<s:HGroup id="mapLayersContainer1" gap="0" right="0">
+					<s:Button id="optLabel"
+							  height="100%" textAlignLast="center"
+							  label="图层目录"
+							  icon="@Embed('assets/images/group-layer.png')"
+							  click="opLayersContainer_clickHandler1(event)" 
+							  visible="true"/>
+					<s:Button id="basemapsButton1"
+							  label="基础地图"
+							  click="basemapsButton_rollOverHandler1(event)"
+							  skinClass="com.esri.viewer.skins.BasemapsButtonSkin"/>
+			</s:HGroup>	
+			<s:BorderContainer id="opLayersContainer1"
+								   width="250" height="250" right="90" y="28"
+								   backgroundColor="{getStyle('contentBackgroundColor')}"
+								   backgroundAlpha="{getStyle('contentBackgroundAlpha')}"
+								   
+								   includeInLayout="{shouldShowOpLayers1}"
+								   rollOut="startBasemapsHideTimer()"
+								   visible="{shouldShowOpLayers1}">
+					<toc:TOC id="toc1"
+							 left="2" right="2" top="3" bottom="3" />
+			</s:BorderContainer>
+			<s:BorderContainer id="basemapsContainer1" right="0" y="28" includeInLayout="{shouldShowBasemaps1}" visible="{shouldShowBasemaps1}"
+								   backgroundColor="{getStyle('contentBackgroundColor')}"
+								   backgroundAlpha="{getStyle('contentBackgroundAlpha')}"
+								   >
+					<s:List id="basemapGallery1"
+							borderVisible="false"
+							dataProvider="{basemapList}"
+							change="dispatchChangeBasemapEvent1()"
+							itemRenderer="widgets.MapSwitchModel.BasemapItemRenderer"
+							maxHeight="362"
+							requireSelection="true"
+							rollOut="startBasemapsHideTimer()"
+							>
+						<s:layout>
+							<s:TileLayout paddingBottom="10"
+										  paddingLeft="10"
+										  paddingRight="10"
+										  paddingTop="10"
+										  requestedColumnCount="{(basemapList.length > 3) ? 2 : 2}"/>
+						</s:layout>
+					</s:List>
+				</s:BorderContainer>
+			</mx:Canvas>
+			<mx:Canvas width="50%" height="100%" backgroundColor="0xffffff" borderColor="0x000000" borderStyle="solid">
+			<esri:Map id="map2" crosshairVisible="true" width="100%" height="100%" logoVisible="false" extentChange="map2_extentChangeHandler(event)">
+				
+			</esri:Map>
+				<s:HGroup id="mapLayersContainer2" gap="0" right="0">
+					<s:Button 
+							  height="100%" textAlignLast="center"
+							  label="图层目录"
+							  icon="@Embed('assets/images/group-layer.png')"
+							  click="opLayersContainer_clickHandler2(event)"
+							  visible="true"/>
+					<s:Button id="basemapsButton2"
+							  label="基础地图"
+							  click="basemapsButton_rollOverHandler2(event)"
+							  skinClass="com.esri.viewer.skins.BasemapsButtonSkin"/>
+				</s:HGroup>	
+				<s:BorderContainer id="basemapsContainer2" right="0" y="28" includeInLayout="{shouldShowBasemaps2}" visible="{shouldShowBasemaps2}"
+								   backgroundColor="{getStyle('contentBackgroundColor')}"
+								   backgroundAlpha="{getStyle('contentBackgroundAlpha')}"
+								   >
+					<s:List id="basemapGallery2"
+							borderVisible="false"
+							dataProvider="{basemapList}"
+							change="dispatchChangeBasemapEvent2()"
+							itemRenderer="widgets.MapSwitchModel.BasemapItemRenderer"
+							maxHeight="362"
+							requireSelection="true"
+							rollOut="startBasemapsHideTimer()"
+							>
+						<s:layout>
+							<s:TileLayout paddingBottom="10"
+										  paddingLeft="10"
+										  paddingRight="10"
+										  paddingTop="10"
+										  requestedColumnCount="{(basemapList.length > 3) ? 2 : 2}"/>
+						</s:layout>
+					</s:List>
+				</s:BorderContainer>
+				<s:BorderContainer id="opLayersContainer2" right="90" y="28"
+								   width="250" height="250"
+								   backgroundColor="{getStyle('contentBackgroundColor')}"
+								   backgroundAlpha="{getStyle('contentBackgroundAlpha')}"
+								   
+								   includeInLayout="{shouldShowOpLayers1}"
+								   rollOut="startBasemapsHideTimer()"
+								   visible="{shouldShowOpLayers2}">
+					<toc:TOC id="toc2"
+							 left="2" right="2" top="3" bottom="3" />
+				</s:BorderContainer>
+			</mx:Canvas>
+		</s:HGroup>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

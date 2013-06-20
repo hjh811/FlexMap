@@ -18,18 +18,17 @@
 	    <module id = "2" title="堤岸长度统计" icon="assets/images/i_edit.png" key="CDTJ">true</module>	
 	</MODULEDATA>
 	<QueryLayer>
-	    <layer name="警示设施" sql="select * from tj_df_jsss_cz t">
+	    <layer name="警示设施" sql="select * from tj_df_jsss_cz t" layerid="http://localhost:6080/arcgis/rest/services/DF/MapServer/3" outFields="TBZH">
  			<sql displayname="航道" table="select * from tj_df_jsss_hd t"></sql>	        
  			<sql displayname="材质" table="select * from tj_df_jsss_cz t"></sql>	        
  			<sql displayname="航道,材质" table="select * from tj_df_jsss_hdcz t"></sql>	        
 	    </layer>
-	   	<layer name="爬梯" sql="select * from tj_df_pt t">
+	   	<layer name="爬梯" sql="select * from tj_df_pt t" layerid="http://localhost:6080/arcgis/rest/services/DF/MapServer/2" outFields="TBZH">
 	   	    <sql displayname="航道" table="select * from tj_df_pt t"></sql>
 	   	</layer>
-	    <layer name="排水口" sql="select * from tj_df_psk t">
+	    <layer name="排水口" sql="select * from tj_df_psk t" layerid="http://localhost:6080/arcgis/rest/services/DF/MapServer/0" outFields="tbzh">
  			<sql displayname="航道" table="select * from tj_df_psk t"></sql>
 	    </layer>
-
 	</QueryLayer>
 	<SERVICES>
 		<SERVICE name="PDAService" url="http://localhost:8080/zjb/phone/PDAServlet"></SERVICE> 
@@ -39,4 +38,5 @@
 	    <point name="前航道" xy="430869.775973543,2557266.932288926"/>
 	    <point name="后航道" xy="426186.6416072743,2551128.5866789017"/>
 	</District>
+	<HD>西左、西右、坦西、坦东、前左、前右、海心沙、二沙左、二沙右、后左、后右</HD>
 </configuration>
