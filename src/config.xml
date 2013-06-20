@@ -64,7 +64,7 @@
                 icon="assets/images/statistics.png"
                 config="widgets/widgetsConfig/StatisticWidget.xml"
                 url="widgets/statistic/StatisticWidget.swf"/>
-        <widget url="widgets/Dfgc/DfgcWidget.swf" config="widgets/Dfgc/DfgcWidget.xml" top="120" left="10" icon="assets/images/rain.gif" label="堤防观测"/>
+        <widget url="widgets/Dfgc/DfgcWidget.swf" config="widgets/Dfgc/DfgcWidget.xml" top="120" left="10" icon="assets/images/i_webcam.png" label="堤防观测"/>
         <widget url="widgets/Qyb/QybWidget.swf" config="widgets/Qyb/QybWidget.xml" top="120" left="10" icon="assets/images/rain.gif" label="水位雨情"/>
        
         <widget label="书签"         left="430" top="90"
@@ -83,10 +83,14 @@
                 icon="assets/images/i_edit.png"
                 config="widgets/Edit/EditWidget.xml"
                 url="widgets/Edit/EditWidget.swf"/>-->
+        <widget label="数据对比" left="0" top="0"
+                icon="assets/images/i_layers_ESRI.png"
+                url="widgets/MapCompareWidget.swf"/>
         <widget label="打印" left="390" top="300"
                 icon="assets/images/i_print.png"
                 config="widgets/Print/SnapshotWidget.xml"
                 url="widgets/Print/SnapshotWidget.swf"/>
+
         <!--
         <widget label="My first widget"
                 icon="assets/images/i_widget.png"

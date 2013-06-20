@@ -17,23 +17,23 @@
     <application path="index.mxml"/>
   </applications>
   <modules>
-    <module application="src/index.mxml" destPath="widgets/Print/SnapshotWidget.swf" optimize="false" sourcePath="src/widgets/Print/SnapshotWidget.mxml"/>
-    <module application="src/index.mxml" destPath="widgets/Bookmark/BookmarkWidget.swf" optimize="false" sourcePath="src/widgets/Bookmark/BookmarkWidget.mxml"/>
-    <module application="src/index.mxml" destPath="widgets/OverviewMap/OverviewMapWidget.swf" optimize="false" sourcePath="src/widgets/OverviewMap/OverviewMapWidget.mxml"/>
-    <module application="src/index.mxml" destPath="widgets/QueryInfo/SpatialQueryWidget.swf" optimize="false" sourcePath="src/widgets/QueryInfo/SpatialQueryWidget.mxml"/>
-    <module application="src/index.mxml" destPath="widgets/PDA/PDAWidget.swf" optimize="false" sourcePath="src/widgets/PDA/PDAWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/eDraw/eDrawWidget.swf" optimize="false" sourcePath="src/widgets/eDraw/eDrawWidget.mxml"/>
-    <module application="src/index.mxml" destPath="widgets/PDA/PDARemindWidget.swf" optimize="false" sourcePath="src/widgets/PDA/PDARemindWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/HeaderController/HeaderControllerWidget.swf" optimize="false" sourcePath="src/widgets/HeaderController/HeaderControllerWidget.mxml"/>
-    <module application="src/index.mxml" destPath="widgets/Navigation/ToolbarWidget.swf" optimize="false" sourcePath="src/widgets/Navigation/ToolbarWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Print/SnapshotWidget.swf" optimize="false" sourcePath="src/widgets/Print/SnapshotWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/Dfgc/DfgcWidget.swf" optimize="false" sourcePath="src/widgets/Dfgc/DfgcWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/MapSwitchModel/MapSwitcherWidget.swf" optimize="false" sourcePath="src/widgets/MapSwitchModel/MapSwitcherWidget.mxml"/>
-    <module application="src/index.mxml" destPath="widgets/WaterQueryWidget.swf" optimize="false" sourcePath="src/widgets/WaterQueryWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/statistic/StatisticWidget.swf" optimize="false" sourcePath="src/widgets/statistic/StatisticWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/PDA/PDAWidget.swf" optimize="false" sourcePath="src/widgets/PDA/PDAWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/OverviewMap/OverviewMapWidget.swf" optimize="false" sourcePath="src/widgets/OverviewMap/OverviewMapWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/PDA/PDARemindWidget.swf" optimize="false" sourcePath="src/widgets/PDA/PDARemindWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/QueryInfo/SpatialQueryWidget.swf" optimize="false" sourcePath="src/widgets/QueryInfo/SpatialQueryWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Navigation/ToolbarWidget.swf" optimize="false" sourcePath="src/widgets/Navigation/ToolbarWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Bookmark/BookmarkWidget.swf" optimize="false" sourcePath="src/widgets/Bookmark/BookmarkWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/Navigation/NavigationWidget.swf" optimize="false" sourcePath="src/widgets/Navigation/NavigationWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/QueryInfo/QueryInfoWidget.swf" optimize="false" sourcePath="src/widgets/QueryInfo/QueryInfoWidget.mxml"/>
-    <module application="src/index.mxml" destPath="widgets/WidgetContainer/WidgetContainerWidget.swf" optimize="false" sourcePath="src/widgets/WidgetContainer/WidgetContainerWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/Qyb/QybWidget.swf" optimize="false" sourcePath="src/widgets/Qyb/QybWidget.mxml"/>
-    <module application="src/index.mxml" destPath="widgets/statistic/StatisticWidget.swf" optimize="false" sourcePath="src/widgets/statistic/StatisticWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/WidgetContainer/WidgetContainerWidget.swf" optimize="false" sourcePath="src/widgets/WidgetContainer/WidgetContainerWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/MapCompareWidget.swf" optimize="false" sourcePath="src/widgets/MapCompareWidget.mxml"/>
   </modules>
   <buildCSSFiles/>
 </actionScriptProperties>
