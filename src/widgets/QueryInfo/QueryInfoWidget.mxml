@@ -160,7 +160,7 @@
 			}
 			
 			[Bindable]
-			private var queryInfoResultAC:ArrayCollection;
+			private var queryInfoResultAC:ArrayCollection=null;
 			private function queryTaskHandler(event:QueryEvent):void
 			{
 				//				Alert.show(event.featureSet.features.length.toString());
@@ -197,7 +197,13 @@
 			private function ExportExcel():void
 			{
 				//				var arrC:ArrayCollection = tjDataGird.dataProvider as ArrayCollection;
-				exportToExcel(queryInfoResultAC);
+				if(queryInfoResultAC!=null)
+				{
+					if(queryInfoResultAC.length>0)
+					{
+						exportToExcel(queryInfoResultAC);
+					}
+				}
 			}
 			private function exportToExcel(arrC:ArrayCollection):void
 			{
@@ -382,7 +388,7 @@
 		<mx:NumberValidator id="numY" source="{YZB}" required="true" property="text" requiredFieldError="请输入Y坐标"/>
 	</fx:Declarations>
 	<viewer:WidgetTemplate id="wTemplate"
-						   width="375" height="265" closed="wTemplate_closedHandler(event)">
+						   width="405" height="265" closed="wTemplate_closedHandler(event)">
 		<s:HGroup id="main"
 				  width="100%" height="100%"
 				  visible="false"
