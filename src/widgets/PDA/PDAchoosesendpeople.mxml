@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" title="选择发送对象" close="PopUpManager.removePopUp(this);" xmlns:supportClasses="com.esri.ags.skins.supportClasses.*" width="450" height="350">
+<fx:Script>
+	<![CDATA[
+		import mx.collections.ArrayCollection;
+		import mx.events.CloseEvent;
+		import mx.managers.PopUpManager;
+		import mx.rpc.events.FaultEvent;
+		import mx.rpc.events.ResultEvent;
+		[Bindable]
+		var remove:String="<<";
+		[Bindable]
+		var removeall:String="<<所有";
+		[Bindable]
+		public var peoarray:ArrayCollection=new ArrayCollection();
+		[Bindable]
+		public var choosearray:ArrayCollection=new ArrayCollection();
+		[Bindable]
+		private var monthsList:Array = [{label:"外业巡查人员"},{label:"管理处人员"}];
+		public var wypeo:ArrayCollection=new ArrayCollection();
+		public  var zjbpeo:ArrayCollection=new ArrayCollection();
+		public var hfwypeo:ArrayCollection=new ArrayCollection();
+		public var hfzjbpeo:ArrayCollection=new ArrayCollection();
+		var i:int=1;
+		public var sur:Boolean=false;
+		private function onChange():void {
+			
+			var oo:Object=Combo.selectedItem;
+			if(oo.label=="外业巡查人员")
+			{
+//				peoarray.removeAll();
+				peoarray=wypeo;
+				i=1;
+			}
+			else
+			{
+//				peoarray.removeAll();
+				peoarray=zjbpeo;
+				i=2;
+			}
+			
+		}
+		private function addpeople():void
+		{
+//			var len:int=peolist.selectedItems.length;
+//			for(var j:int=0;j<len;j++)
+//			{
+//				var sel:Object=peolist.selectedItems[j];
+//				choosearray.addItem(sel);
+//		       var index:int=peoarray.getItemIndex(sel);
+////				peoarray.removeItemAt(index);
+//				if(i==1)
+//				{
+//					
+//					wypeo.removeItemAt(index);
+//					peoarray=wypeo;
+//				}
+//				else
+//				{
+//					zjbpeo.removeItemAt(index);
+//					peoarray=zjbpeo;
+//				}
+//				
+//				
+//			}
+			while(peolist.selectedItems.length>0)
+			{
+				var sel:Object=peolist.selectedItems[0];
+								choosearray.addItem(sel);
+						       var index:int=peoarray.getItemIndex(sel);
+				//				peoarray.removeItemAt(index);
+								if(i==1)
+								{
+									
+									wypeo.removeItemAt(index);
+									peoarray=wypeo;
+								}
+								else
+								{
+									zjbpeo.removeItemAt(index);
+									peoarray=zjbpeo;
+								}
+			}
+			
+		}
+		private function removepeople():void
+		{
+			for(var j:int=0;j<chooselist.selectedItems.length;j++)
+			{
+				var sel:Object=chooselist.selectedItems[j];
+				choosearray.removeItemAt(choosearray.getItemIndex(sel));
+//				peoarray.addItem(sel);
+				if(hfwypeo.contains(sel))
+				{
+					wypeo.addItem(sel);
+					peoarray=wypeo;
+					i=1;
+					Combo.selectedIndex=0;
+				}
+				else
+				{
+					zjbpeo.addItem(sel);
+					peoarray=zjbpeo;
+					i=2;
+					Combo.selectedIndex=1;
+				}	
+			}
+			
+		}
+		private function addallpeople():void
+		{
+			
+			for(var j:int=0;j<peoarray.length;j++)
+			{
+				choosearray.addItem(peoarray.getItemAt(j));
+			}
+
+//			peoarray.removeAll();
+			if(i==1)
+			{
+				
+				wypeo.removeAll();
+				peoarray=wypeo;
+			}
+			else
+			{
+				zjbpeo.removeAll();
+				peoarray=zjbpeo;
+			}
+			
+		}
+		private function removeallpeople():void
+		{
+			for(var j:int=0;j<choosearray.length;j++)
+			{
+				var sel:Object=choosearray[j];
+				if(hfwypeo.contains(sel))
+					{
+						
+						wypeo.addItem(sel);
+					}
+					else
+					{
+						zjbpeo.addItem(sel);
+					}
+			}
+			choosearray.removeAll();
+//			wypeo=hfwypeo;
+//			zjbpeo=hfzjbpeo;
+			peoarray=wypeo;
+			i=1;
+			Combo.selectedIndex=0;
+			
+			
+		}
+		private function sure():void
+		{
+			PopUpManager.removePopUp(this);
+			sur=true;
+			this.dispatchEvent(new Event("NEWCLOSE"));
+			
+			
+		}
+		private function pro():void
+		{
+			PopUpManager.removePopUp(this);
+			
+		}
+		private function DisplayFunction(data:Object):String      
+		{      
+			var label:String = "";      
+			if(data.hasOwnProperty("name")){      
+				label += data.name + ":";      
+			}      
+			if(data.hasOwnProperty("phone")){      
+				label += data.phone;      
+			}      
+			
+			return label;      
+		}      
+	]]>
+</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:HGroup width="100%" height="80%">
+		
+	<s:VGroup left="20" width="40%" height="100%" horizontalAlign="center">
+	<mx:ComboBox left="10" height="25" width="95%" id="Combo" labelField="label"  dataProvider="{monthsList}" change="onChange()"/>
+		<s:Panel   height="100%" width="100%">
+			
+		
+		<s:List  height="210" width="100%" id="peolist"  allowMultipleSelection="true"  dataProvider="{peoarray}" labelFunction="DisplayFunction"  y="-31">
+			
+		</s:List>
+		</s:Panel>
+	</s:VGroup>
+		<s:VGroup left="20" width="20%" height="100%" verticalAlign="middle" horizontalAlign="center">
+		    <s:Button width="95%" label=">>" click="addpeople()"/>
+			<s:Button width="95%" label="{remove}" click="removepeople()"/>
+			<s:Button width="95%" label=">>所有" click="addallpeople()"/>
+			<s:Button width="95%" label="{removeall}" click="removeallpeople()"/>
+			
+		</s:VGroup>
+	
+	<s:VGroup left="20" width="40%" height="100%" horizontalAlign="center">
+		
+		<s:Label height="25" width="100%"  text="接收人员" textAlign="left"/>
+		<s:Panel   height="100%" width="100%">
+			
+		<s:List  height="211" width="100%" labelField="label" allowMultipleSelection="true" id="chooselist" dataProvider="{choosearray}" labelFunction="DisplayFunction" y="-32">
+			
+		</s:List>
+		</s:Panel>
+	</s:VGroup>
+	</s:HGroup>
+	<s:HGroup width="96%" height="20%" horizontalAlign="right" verticalAlign="middle">
+		<s:Button width="60" height="25" label="确定" click="sure()"/>
+		<s:Button  right="20" width="60" height="25" label="取消" click="pro()"/>
+	</s:HGroup>
+</mx:TitleWindow>
