@@ -23,6 +23,8 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.as3xls.xls.ExcelFile;
+			import com.as3xls.xls.Sheet;
 			import com.esri.ags.Graphic;
 			import com.esri.viewer.components.Info;
 			import com.esri.ags.SpatialReference;
@@ -158,7 +160,7 @@
 			}
 			
 			[Bindable]
-			private var queryInfoResultAC:ArrayCollection;
+			private var queryInfoResultAC:ArrayCollection=null;
 			private function queryTaskHandler(event:QueryEvent):void
 			{
 				//				Alert.show(event.featureSet.features.length.toString());
@@ -189,7 +191,43 @@
 					}
 				}
 			}
-			
+			private var sheet:Sheet = null; 
+			[Bindable]
+			private var fields:Array=new Array();
+			private function ExportExcel():void
+			{
+				//				var arrC:ArrayCollection = tjDataGird.dataProvider as ArrayCollection;
+				if(queryInfoResultAC!=null)
+				{
+					if(queryInfoResultAC.length>0)
+					{
+						exportToExcel(queryInfoResultAC);
+					}
+				}
+			}
+			private function exportToExcel(arrC:ArrayCollection):void
+			{
+				var dataProviderCollection:ArrayCollection=new ArrayCollection();
+				dataProviderCollection=arrC;
+				sheet=new Sheet();
+				var rowCount:int=dataProviderCollection.length;
+				sheet.resize(rowCount + 1, 1);
+				
+				fields.push("统编桩号");
+				sheet.setCell(0, 0, "统编桩号");
+				
+				
+				for (var r:int=0; r < rowCount; r++)
+				{
+					var record:QueryInfoResult=dataProviderCollection.getItemAt(r) as  QueryInfoResult;
+					sheet.setCell(r+1, 0, record.title);
+				}
+				var xls:ExcelFile=new ExcelFile();
+				xls.sheets.addItem(sheet);
+				var bytes:ByteArray=xls.saveToByteArray();
+				var fr:FileReference=new FileReference();
+				fr.save(bytes, "查询结果.xls");
+			}
 			private function showInfo(queryInfoResult:QueryInfoResult):void
 			{
 				if (queryInfoResult.geometry.type == Geometry.MAPPOINT)
@@ -350,7 +388,7 @@
 		<mx:NumberValidator id="numY" source="{YZB}" required="true" property="text" requiredFieldError="请输入Y坐标"/>
 	</fx:Declarations>
 	<viewer:WidgetTemplate id="wTemplate"
-						   width="375" height="265" closed="wTemplate_closedHandler(event)">
+						   width="405" height="265" closed="wTemplate_closedHandler(event)">
 		<s:HGroup id="main"
 				  width="100%" height="100%"
 				  visible="false"
@@ -375,6 +413,7 @@
 				</s:Button>
 				<s:Button label="重置" width="50" height="23" click="reset()">
 				</s:Button>
+				<s:Button   width="50" height="23"  label="导出" click="ExportExcel()"/>
 			</s:HGroup>
 			<mx:HRule width="100%" height="2" alpha="0.8" styleName="WidgetRule"/>
 			<s:Scroller width="100%" height="100%">

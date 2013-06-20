@@ -29,7 +29,8 @@
 	</fx:Declarations>
 	<fx:Script>
 		<![CDATA[
-			
+			import com.as3xls.xls.ExcelFile;
+			import com.as3xls.xls.Sheet;
 			import com.esri.ags.Graphic;
 			import com.esri.ags.events.MapMouseEvent;
 			import com.esri.ags.geometry.MapPoint;
@@ -228,7 +229,54 @@
 				showTJJG();
 				
 			}
-			
+			private var sheet:Sheet = null; 
+			[Bindable]
+			private var fields:Array=new Array();
+			private function ExportExcel():void
+			{
+				var arrC:ArrayCollection = tjDataGird.dataProvider as ArrayCollection;
+				if(arrC.length>0)
+				{
+				exportToExcel(arrC);
+				}
+			}
+			private function exportToExcel(arrC:ArrayCollection):void
+			{
+				var dataProviderCollection:ArrayCollection=new ArrayCollection();
+				dataProviderCollection=arrC;
+				sheet=new Sheet();
+				var rowCount:int=dataProviderCollection.length;
+				sheet.resize(rowCount + 1, tjDataGird.columnCount);
+				var columns:Array=tjDataGird.columns;
+				var i:int=0;
+				
+				for each (var field:DataGridColumn in columns)
+				{
+					fields.push(field.dataField.toString());
+					sheet.setCell(0, i, columns[i].headerText);
+					i++;
+				}
+				
+				for (var r:int=0; r < rowCount; r++)
+				{
+					var record:Object=dataProviderCollection.getItemAt(r);
+					insertRecordInSheet(r + 1, sheet, record);
+				}
+				var xls:ExcelFile=new ExcelFile();
+				xls.sheets.addItem(sheet);
+				var bytes:ByteArray=xls.saveToByteArray();
+				var fr:FileReference=new FileReference();
+				fr.save(bytes, "统计结果.xls");
+			}
+			private function insertRecordInSheet(row:int, sheet:Sheet, record:Object):void
+			{
+				var i:int=0;
+				for each (var field:String in fields)
+				{
+					sheet.setCell(row, i, record[field]);
+					i++;
+				}
+			}
 			protected function wTemplate_closedHandler(event:Event):void
 			{
 //				queryInfoResultAC = null;
@@ -310,7 +358,10 @@
 	
 		</s:VGroup>
 		<s:VGroup id="TJJG" width="100%" height="100%"  visible="false" visible.TJJG="true">
-			<mx:Label id="tjTitle" text="统计结果"/>
+			<s:HGroup  width="100%"   height="25">
+				<mx:Label id="tjTitle" text="统计结果"/>
+				<s:Button left="20"  label="导出" click="ExportExcel()"/>
+			</s:HGroup>
 			<mx:DataGrid id="tjDataGird" width="100%" height="100%">
 				<mx:columns>
 					<mx:DataGridColumn headerText="航道" dataField="hd" />
