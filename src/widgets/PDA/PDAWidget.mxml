@@ -101,7 +101,8 @@
 
 			[Bindable]
 			private var moduleAC:ArrayCollection;
-
+			[Bindable]
+			private var lessnum:int=0;
             private var selectedindex:int = 0;
 			[Bindable]
 			private var pdaResultAC:ArrayCollection;
@@ -116,7 +117,7 @@
 			private var wzNum:Number = 0;
 			private var showtip:Boolean = false;
 			private var dateFormatter:DateFormatter=new DateFormatter();
-			
+			private var fsdxserver;
             private function init():void
             {
 				//Alert.show("ok");
@@ -139,6 +140,7 @@
 					}
 					
 					servletcontext = this.configData.configXML.servletcontext;
+					fsdxserver=configXML.fsdxSERVICE;
                 }
 
                 addTitleBarButtons();
@@ -192,7 +194,7 @@
 			{
 				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
 				userSelected.dataProvider = jsonObject["values"] as Array;
-				pdausers.dataProvider = jsonObject["values"] as Array;
+//				pdausers.dataProvider = jsonObject["values"] as Array;
 			}
 
             private function assignLabels():void
@@ -887,23 +889,121 @@
 //				}
 			}
 
-			protected function btnSend_clickHandler(event:MouseEvent):void
+			protected function btnCz_clickHandler(event:MouseEvent):void
 			{
-				// TODO Auto-generated method stub
-				var userObj:Object = this.pdausers.selectedItem;
-				var httpSendMSG:HTTPService = new HTTPService;
-				httpSendMSG.url= "http://10.23.97.247/androidpn/notification.do?action=send";
-				httpSendMSG.method = "POST";
-				httpSendMSG.addEventListener(ResultEvent.RESULT, sendHander);
-				var paramOjb:Object = new Object;
-				paramOjb.broadcast = "N";
-				paramOjb.username = userObj["loginname"];
-				paramOjb.title = msgtitle.text;
-				paramOjb.message = sendMgs.text;
-				paramOjb.uri = "";
-				httpSendMSG.send(paramOjb);
+				sendname="";
+			   sendnumber="";
+			   logname="";
+		       sendMgs.text="";
+			   people.text="";
+			   Message.text="还剩65字";
+			   lessnum=0;
 			}
 			
+			protected function btnChoose_clickHandler(event:MouseEvent):void
+			{
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url= servletcontext + "/phone/GetuserServelt";
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				var params:URLVariables = new URLVariables();     
+				httpservice.addEventListener(ResultEvent.RESULT,reshandler);
+				httpservice.send(params);
+			}
+			
+			private function reshandler(event:ResultEvent):void
+			{
+				try
+			{
+			  
+					var ress:String=event.result.toString();
+				var jsonObject:Object = JSON.parse(ress) as Object;
+				var jsonwy:Array = jsonObject["wy"] as Array;
+				var jsonzjb:Array = jsonObject["zjb"] as Array;
+			
+			choosepeo=PopUpManager.createPopUp(this.parentApplication.parent,PDAchoosesendpeople,false) as PDAchoosesendpeople;
+			choosepeo.wypeo=pro(jsonwy);
+			choosepeo.hfwypeo=pro(jsonwy);
+			choosepeo.zjbpeo=pro(jsonzjb);
+			choosepeo.hfzjbpeo=pro(jsonzjb);
+			choosepeo.peoarray=pro(jsonwy);
+			choosepeo.addEventListener("NEWCLOSE", ChooseUserCloseHandler);
+			   
+			PopUpManager.centerPopUp(choosepeo);
+			}
+			catch(e:Error)
+			{
+				Alert.show(e.message.toString());
+			}
+			
+				
+			}
+			var sendname:String;
+			var sendnumber:String;
+			var logname:String;
+			var choosepeo:PDAchoosesendpeople=null;
+			private function ChooseUserCloseHandler(event:Event):void
+			{
+				if(choosepeo.sur)
+				{
+				for(var j:int=0;j<choosepeo.choosearray.length;j++)
+				{
+					var sel:Object=choosepeo.choosearray[j];
+					if(j==0)
+					{
+						
+						sendname=sel.name;
+						sendnumber=sel.phone;
+						logname=sel.loginname;
+					}
+					else
+					{
+						sendname+=","+sel.name;
+						sendnumber+=","+sel.phone;
+						logname+=","+sel.loginname;
+					}
+				}
+				people.text=sendname;
+				}
+			}
+			protected function btnSend_clickHandler(event:MouseEvent):void
+			{
+//				if(people.text=="")
+//				{
+//					Alert.show("接收人员不能为空！");
+//					return;
+//				}
+				
+				var httpservice:HTTPService = new HTTPService;
+//				httpservice.url= servletcontext + "/phone/GetuserServelt";
+				httpservice.url=fsdxserver;
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				var params:URLVariables = new URLVariables();     
+				httpservice.addEventListener(ResultEvent.RESULT,sendhandler);
+				params.sendnumber=sendnumber;
+				params.logname=logname;
+//				params.sendnumber="18613057660";
+//				params.logname="sd";
+				params.sendmessage=sendMgs.text+"[珠江办]";
+				httpservice.send(params);
+			}
+			private function sendhandler(event:ResultEvent):void
+			{     
+				var ress:String=event.result.toString();
+				Alert.show(ress);
+			}
+			private function pro(j:Array):ArrayCollection
+			{
+				var wypeo:ArrayCollection=new ArrayCollection();
+				for(var i:int=0;i<j.length;i++)
+				{
+//					var obj:Object=new Object();
+//					obj.loginname=j[i].
+					wypeo.addItem(j[i]);
+				}
+				return wypeo;
+			}
 			private function sendHander(event:ResultEvent):void
 			{
 				Alert.show("发送成功");
@@ -1106,6 +1206,15 @@
 				queryEndDate.text ="";
 				this.queryDataGrid.dataProvider = null;
 			}
+
+			protected function sendMgs_changeHandler(event:Event):void
+			{
+				lessnum=65-sendMgs.text.length;
+				Message.text="还剩"+lessnum+"字";
+				
+				
+			}
+
         ]]>
     </fx:Script>
     <fx:Declarations>
@@ -1160,17 +1269,22 @@
                  width="100%" height="100%"
                  visible="false"
                  visible.FSXX="true" gap="2">
-			<mx:HBox width="100%" height="28">
-				<mx:Label text="选择人员"/>
-				<mx:ComboBox id="pdausers" width="150" styleName="WidgetText" labelField="realname"/>
-			</mx:HBox>
+			<s:VGroup width="100%" height="80" top="10">
+				<mx:HBox  width="100%" height="30">
+				<s:Button id="btnChoose"   icon="assets/images/group_add.gif" label="选择接收人" height="25"  width="120" click="btnChoose_clickHandler(event)"/>
+					<mx:Button id="btnCz" label="重置" height="25"   width="50" click="btnCz_clickHandler(event)"/>
+					</mx:HBox>
+					<mx:TextArea id="people" width="100%" height="50" styleName="InfoText" editable="false" />
+			</s:VGroup>
 			<s:VGroup width="100%" height="100%" gap="5">
-				<mx:Label text="标题"/>
-				<mx:TextInput text="信息提醒" width="100%" id="msgtitle"/>
 				<mx:Label text="内容"/>
-				<mx:TextArea id="sendMgs" width="100%" height="70" styleName="InfoText" height.FSXX="142"/>
-				<mx:Button id="btnSend" label="发送" width="100" click="btnSend_clickHandler(event)" width.FSXX="78"/>
-				<mx:Text id="Message" text="" width="50%" fontSize="12" fontWeight="bold" visible="false"/>
+				<mx:TextArea id="sendMgs" width="100%" height="70" styleName="InfoText" height.FSXX="142" change="sendMgs_changeHandler(event)"/>
+				<mx:HBox  width="100%" height="40">
+				<mx:Button id="btnSend" label="发送" width="100" click="btnSend_clickHandler(event)" width.FSXX="78" enabled="{lessnum>0?true:false}"/>
+					<s:VGroup  width="100%" height="40" horizontalAlign="right">
+				<mx:Text id="Message" text="还剩65个字" width="40%" fontSize="12" fontWeight="bold" visible="true" />
+				</s:VGroup>
+				</mx:HBox>
 			</s:VGroup>
         </s:VGroup>
         <s:Group id="GZJL"
