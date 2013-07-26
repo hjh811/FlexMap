@@ -72,6 +72,7 @@
 			import com.esri.ags.layers.GraphicsLayer;
 			import com.esri.ags.symbols.PictureMarkerSymbol;
 			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.viewer.ViewerContainer;
 			import com.esri.viewer.components.InfoPopup;
 			
 			import mx.collections.ArrayCollection;
@@ -98,7 +99,8 @@
             [Bindable]
             private var submitLabel:String;
             private var errorLabel:String;
-
+			[Bindable]
+			private var arrhfsd:ArrayCollection;
 			[Bindable]
 			private var moduleAC:ArrayCollection;
 			[Bindable]
@@ -142,7 +144,8 @@
 					servletcontext = this.configData.configXML.servletcontext;
 					fsdxserver=configXML.fsdxSERVICE;
                 }
-
+				arrhfsd=new ArrayCollection([{name:'1秒',vaule:1000},{name:'2秒',vaule:2000},{name:'0.5秒',vaule:500},
+					{name:'0.3秒',vaule:300},{name:'0.2秒',vaule:200},]);
                 addTitleBarButtons();
 				
 				this.map.addLayer(graphicsLayer);
@@ -161,7 +164,7 @@
 				
 //				getSBData();
 //				getWZData();
-				timerHis=new Timer(2000);
+				timerHis=new Timer(500);
 				timer=new Timer(40000);
 				timer.addEventListener(TimerEvent.TIMER, onTimer);
 				timerHis.addEventListener(TimerEvent.TIMER, onTimerHis);
@@ -229,6 +232,7 @@
             {
                 this.currentState = "FSXX";
 				wTemplate.selectedTitlebarButtonIndex = 2;
+				getuser();
             }
             private function showGZJL():void
             {
@@ -816,6 +820,7 @@
 			private var m_currentSelectedHis:Object = null;
 			private function onBackHandler(event:MouseEvent):void
 			{
+				
 				if(hisPath)  //正在回放
 				{
 					if (timerRunning == true)
@@ -854,6 +859,11 @@
 					if (hisPath)
 					{
 						timer.stop();
+						if(hfsd.selectedItem!=null)
+						{
+						timerHis=new Timer(hfsd.selectedItem.vaule);
+						timerHis.addEventListener(TimerEvent.TIMER, onTimerHis);
+						}
 						graphicsLayerDraw.clear();
 						var icon:String="assets/images/i_demographics.png";
 						var pdaPoint:MapPoint=hisPathAC[0].pt as MapPoint;
@@ -867,7 +877,7 @@
 						
 						graphicsLayerPath.clear();
 						//clearMessage();
-						
+					
 						timerHis.start();
 						this.btnback.label="停止";
 						
@@ -894,21 +904,38 @@
 				sendname="";
 			   sendnumber="";
 			   logname="";
+	
 		       sendMgs.text="";
 			   people.text="";
-			   Message.text="还剩65字";
+			   dxsize=1;
+			   Message.text=messagelegth+"/"+dxsize;
 			   lessnum=0;
 			}
-			
-			protected function btnChoose_clickHandler(event:MouseEvent):void
+			var jsonwy:Array ;
+			var jsonzjb:Array ;
+			var username:String;
+			var messagelast:String;
+			public function getuser():void
 			{
 				var httpservice:HTTPService = new HTTPService;
 				httpservice.url= servletcontext + "/phone/GetuserServelt";
 				httpservice.method = "POST";
 				httpservice.resultFormat = "text";
-				var params:URLVariables = new URLVariables();     
+				var params:URLVariables = new URLVariables();    
+				params.userid=ViewerContainer.getInstance().userObject.userID;
 				httpservice.addEventListener(ResultEvent.RESULT,reshandler);
 				httpservice.send(params);
+			}
+			protected function btnChoose_clickHandler(event:MouseEvent):void
+			{
+				choosepeo=PopUpManager.createPopUp(this.parentApplication.parent,PDAchoosesendpeople,false) as PDAchoosesendpeople;
+				choosepeo.wypeo=pro(jsonwy);
+				choosepeo.hfwypeo=pro(jsonwy);
+				choosepeo.zjbpeo=pro(jsonzjb);
+				choosepeo.hfzjbpeo=pro(jsonzjb);
+				choosepeo.peoarray=pro(jsonwy);
+				choosepeo.addEventListener("NEWCLOSE", ChooseUserCloseHandler);
+				PopUpManager.centerPopUp(choosepeo);
 			}
 			
 			private function reshandler(event:ResultEvent):void
@@ -916,20 +943,14 @@
 				try
 			{
 			  
-					var ress:String=event.result.toString();
+				var ress:String=event.result.toString();
 				var jsonObject:Object = JSON.parse(ress) as Object;
-				var jsonwy:Array = jsonObject["wy"] as Array;
-				var jsonzjb:Array = jsonObject["zjb"] as Array;
-			
-			choosepeo=PopUpManager.createPopUp(this.parentApplication.parent,PDAchoosesendpeople,false) as PDAchoosesendpeople;
-			choosepeo.wypeo=pro(jsonwy);
-			choosepeo.hfwypeo=pro(jsonwy);
-			choosepeo.zjbpeo=pro(jsonzjb);
-			choosepeo.hfzjbpeo=pro(jsonzjb);
-			choosepeo.peoarray=pro(jsonwy);
-			choosepeo.addEventListener("NEWCLOSE", ChooseUserCloseHandler);
-			   
-			PopUpManager.centerPopUp(choosepeo);
+				 jsonwy = jsonObject["wy"] as Array;
+				 jsonzjb= jsonObject["zjb"] as Array;
+				 username=jsonObject.username as String;
+				 messagelast=":"+username+"[珠堤处]";
+				 messagelegth=70-messagelast.length;
+				 Message.text=messagelegth+"/"+dxsize;
 			}
 			catch(e:Error)
 			{
@@ -942,6 +963,9 @@
 			var sendnumber:String;
 			var logname:String;
 			var choosepeo:PDAchoosesendpeople=null;
+			var dxsize:int=1;
+			var isfs:int=1;
+			var messagelegth:int;
 			private function ChooseUserCloseHandler(event:Event):void
 			{
 				if(choosepeo.sur)
@@ -968,12 +992,29 @@
 			}
 			protected function btnSend_clickHandler(event:MouseEvent):void
 			{
-//				if(people.text=="")
-//				{
-//					Alert.show("接收人员不能为空！");
-//					return;
-//				}
-				
+				if(people.text=="")
+				{
+					Alert.show("接收人员不能为空！");
+					return;
+				}
+				isfs=1;
+				var mess:String=sendMgs.text;
+				for (var ii:int = 0; ii < dxsize; ii++) {
+					var messa:String = null;
+					if (dxsize == 1) {
+						messa = mess;
+					}
+					else 
+					{
+						if(ii<dxsize-1)
+						{
+							messa=mess.substring(ii*messagelegth, messagelegth*(ii+1));
+						}
+						else
+						{
+							messa=mess.substring(ii*messagelegth, mess.length);
+						}
+					}
 				var httpservice:HTTPService = new HTTPService;
 //				httpservice.url= servletcontext + "/phone/GetuserServelt";
 				httpservice.url=fsdxserver;
@@ -984,14 +1025,19 @@
 				params.sendnumber=sendnumber;
 				params.logname=logname;
 //				params.sendnumber="18613057660";
-//				params.logname="sd";
-				params.sendmessage=sendMgs.text+"[珠江办]";
+				params.senduserid= ViewerContainer.getInstance().userObject.userID;
+				params.sendmessage=messa+messagelast;
 				httpservice.send(params);
+				}
 			}
 			private function sendhandler(event:ResultEvent):void
 			{     
+				if(isfs==1)
+				{
 				var ress:String=event.result.toString();
 				Alert.show(ress);
+				isfs=2;
+				}
 			}
 			private function pro(j:Array):ArrayCollection
 			{
@@ -1004,10 +1050,13 @@
 				}
 				return wypeo;
 			}
-			private function sendHander(event:ResultEvent):void
-			{
-				Alert.show("发送成功");
-			}
+//			private function sendHander(event:ResultEvent):void
+//			{
+//				if(isfs==1)
+//				{
+//				Alert.show("发送成功");
+//				}
+//			}
 
 
 			protected function tabnavigator1_changeHandler(event:IndexChangedEvent):void
@@ -1162,11 +1211,57 @@
 			{
 				getAllusers();
 			}
-
+			[Bindable]
+			private var count:int=1;
+			[Bindable]
+			private var pagesize:int=1;
+			
+			private var sDate:String;
+			private var eDate:String;
+			private function firstpage():void
+			{
+				
+					pagesize=1;
+					fyQueryls();
+				
+			}
+			private function propage():void
+			{
+				
+					pagesize=pagesize-1;
+					fyQueryls();
+				
+			}
+			private function gopage():void
+			{
+				if(parseInt(inputpage.text)>count)
+				{
+					return;
+				}
+				
+				
+					pagesize=parseInt(inputpage.text);
+					fyQueryls();
+			
+			}
+			private function nextpage():void
+			{
+				
+					pagesize=pagesize+1;
+					fyQueryls();
+				
+			}
+			private function lastpage():void
+			{
+				
+					pagesize=count;
+					fyQueryls();
+				
+			}
 			private function queryHistoryRecord():void
 			{
-				var sDate:String = queryStartDate.text;
-				var eDate:String = queryEndDate.text;
+				 sDate = queryStartDate.text;
+				 eDate = queryEndDate.text;
 				if(sDate=="" || eDate=="")
 				{
 					Alert.show("请填写时间");
@@ -1177,20 +1272,60 @@
 					Alert.show("开始时间大于结束时间，请重新输入");
 					return;
 				}
+				
+				Queryls();
+			}
+			private function Queryls():void
+			{
 				var http:HTTPService = new HTTPService;
 				http.url = servletcontext + "/gis/StatisticServlet";
 				http.addEventListener(ResultEvent.RESULT,QueryResultHandler);
 				http.method = "POST";
 				var p:Object = new Object;
 				if(typeComb.selectedItem.toString() == "巡查上报")
-					p.s = "select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc";
+					p.s = "select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1  and isoutside=2) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc";
 				else
-					p.s = "select 'wz' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc";
+					p.s = "select 'wz' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1  and isoutside=2) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc";
 				http.send(p);
+			}
+			private function fyQueryls():void
+			{
+				var http:HTTPService = new HTTPService;
+				http.url = servletcontext + "/gis/StatisticServlet";
+				http.addEventListener(ResultEvent.RESULT,fyQueryResultHandler);
+				http.method = "POST";
+				var p:Object = new Object;
+				if(typeComb.selectedItem.toString() == "巡查上报")
+				{
+					p.s = "SELECT *"+
+					"  FROM (SELECT a.*, ROWNUM rn"+
+					"  FROM ("+"select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1 and isoutside=2) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc"
+					+") a"+
+					"  WHERE ROWNUM <= "+pagesize*20+") WHERE rn >= "+((pagesize-1)*20+1);
+				}
+				else
+				{
+				p.s = "SELECT *"+
+					"  FROM (SELECT a.*, ROWNUM rn"+
+					"  FROM ("+"select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1 and isoutside=2) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc"
+					+") a"+
+					"  WHERE ROWNUM <= "+pagesize*20+") WHERE rn >= "+((pagesize-1)*20+1);
+				};
+				http.send(p);
+			}
+			private function QueryResultHandler(event:ResultEvent):void
+			{
+				if(event.result==null) return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				count=jsonValues.length/20+1;
+				pagecount.text="/"+count;
+				pagesize=1;
+				fyQueryls();
 				
 			}
-			
-			private function QueryResultHandler(event:ResultEvent):void
+			private function fyQueryResultHandler(event:ResultEvent):void
 			{
 				if(event.result==null) return;
 				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
@@ -1199,18 +1334,35 @@
 				if(rcDataGrid!=null)
 					this.queryDataGrid.dataProvider = jsonValues;
 			}
-			
 			private function resetQuery():void
 			{
 				queryStartDate.text ="";
 				queryEndDate.text ="";
 				this.queryDataGrid.dataProvider = null;
+				count=1;
+				pagecount.text="/"+count;
+				pagesize=1;
 			}
 
 			protected function sendMgs_changeHandler(event:Event):void
 			{
-				lessnum=65-sendMgs.text.length;
-				Message.text="还剩"+lessnum+"字";
+				
+				dxsize = sendMgs.text.length/messagelegth + 1;
+				lessnum=sendMgs.text.length;
+				var curr:int=messagelegth-sendMgs.text.length%messagelegth;
+				if(curr==messagelegth&&dxsize>1)
+				{
+					if(dxsize>1)
+					{
+				Message.text="0/"+(dxsize-1);
+					}
+					else
+					{Message.text=curr+"/"+dxsize;}
+				}
+				else
+				{
+					Message.text=curr+"/"+dxsize;
+				}
 				
 				
 			}
@@ -1224,7 +1376,7 @@
 				  repeatBehavior="reverse" />
 	</fx:Declarations>
     <viewer:WidgetTemplate id="wTemplate"
-                           width="375" height="365" closed="wTemplate_closedHandler(event)">
+                           width="400" height="365" closed="wTemplate_closedHandler(event)">
 
         <s:HGroup id="main"
                  width="100%" height="100%"
@@ -1282,7 +1434,7 @@
 				<mx:HBox  width="100%" height="40">
 				<mx:Button id="btnSend" label="发送" width="100" click="btnSend_clickHandler(event)" width.FSXX="78" enabled="{lessnum>0?true:false}"/>
 					<s:VGroup  width="100%" height="40" horizontalAlign="right">
-				<mx:Text id="Message" text="还剩65个字" width="40%" fontSize="12" fontWeight="bold" visible="true" />
+				<mx:Text id="Message" text="65/1" width="40%" fontSize="12" fontWeight="bold" visible="true" />
 				</s:VGroup>
 				</mx:HBox>
 			</s:VGroup>
@@ -1318,6 +1470,16 @@
 						<mx:DataGridColumn headerText="巡查员" dataField="xdy" width="60"/>
 					</mx:columns>
 				</mx:DataGrid>
+				<s:HGroup verticalAlign="middle" horizontalAlign="right" width="100%" height="30">
+					<s:Button label="首页" width="50" height="20" click="firstpage()" enabled="{count>1?true:false}"/>
+					<s:Button label="上一页" width="60" height="20" click="propage()" enabled="{pagesize>1?true:false}"/>	
+					<s:TextInput id="inputpage" restrict="0-9" width="20" height="20" text="{pagesize}"/>
+					<s:Label id="pagecount" text="/1" width="20" height="10" top="15"/>
+					<s:Button label="跳页" width="50" height="20" click="gopage()" enabled="{count>1?true:false}"/>
+					<s:Button label="下一页" width="60" height="20" click="nextpage()" enabled="{count>pagesize?true:false}"/>	
+					<s:Button label="末页" width="50" height="20" click="lastpage()" enabled="{count>1?true:false}"/>	
+					
+				</s:HGroup>
 			</s:VGroup>
         </s:Group>
         <s:VGroup id="GJHF"
@@ -1358,7 +1520,10 @@
 				<mx:Button id="btnQuery" label="查询" styleName="InfoText" width="50" click="onBtnQueryHisHandler(event)"/>
 				<mx:Button id="btnback" label="回放" styleName="InfoText" width="50" click="onBackHandler(event)"/>
 				<mx:CheckBox label="跟踪" id="chkTrack" fontSize="12"  selected="true" click="clickTrack(event)"/>
-				<mx:Button label="详细信息" click="showdetail()">
+				
+				<mx:Label text="回放速度" styleName="InfoText" visible="true"/>
+				<mx:ComboBox  labelField="name" width="60"   height="20" id="hfsd"   visible="true"  dataProvider="{arrhfsd}"/>
+				<mx:Button label="详细信息" click="showdetail()" visible="false">
 				</mx:Button>
 			</mx:HBox>
 			<mx:HRule width="100%" height="2" alpha="0.4" styleName="WidgetRule"/>
