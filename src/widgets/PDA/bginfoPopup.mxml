@@ -61,6 +61,7 @@
 			
 			import spark.components.Application;
 			public var servletcontext:String;
+			public var fsdxserver:String;
 			private function init():void
 			{
 				map.addEventListener(PanEvent.PAN_UPDATE, repositionInfo);
@@ -125,7 +126,7 @@
 					pt.x=infoData.x;
 					pt.y=infoData.y;
 					var infoPt:Point = map.toScreen(pt);
-					this.x = infoPt.x-45  ;
+					this.x = infoPt.x-35  ;
 					this.y = infoPt.y-45  ;
 					
 					//					repositionInfo(null);
@@ -147,7 +148,7 @@
 					//						reg = "regRight";
 					//					}
 					//					currentState = reg;
-					this.x = infoPt.x-45 ;
+					this.x = infoPt.x-35 ;
 					this.y = infoPt.y-45 ;
 				}
 			}
@@ -161,6 +162,7 @@
 			{
 				var form:RCSBFormWindow =PopUpManager.createPopUp(this.parentApplication.parent,RCSBFormWindow,false) as RCSBFormWindow;
 				form.servletContent = this.servletcontext;
+				form.fsdxserver=fsdxserver;
 				form.progressid = infoData;
 				form.addEventListener("NEWCLOSE", closeHandler);
 				PopUpManager.centerPopUp(form);

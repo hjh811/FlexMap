@@ -4,7 +4,7 @@
 				   xmlns:mx="library://ns.adobe.com/flex/mx"
 				   xmlns:viewer="com.esri.viewer.*"
 				   layout="absolute"
-				   creationComplete="init()"  xmlns:components="com.esri.viewer.components.*" xmlns:PDA="widgets.PDA.*">
+				   widgetConfigLoaded="init()" xmlns:components="com.esri.viewer.components.*" xmlns:PDA="widgets.PDA.*">
 	
 	<fx:Style>
 		@namespace s "library://ns.adobe.com/flex/spark";
@@ -61,13 +61,21 @@
 			[Bindable]
 			private var pagesize:int=1;
 			private var isxc:Boolean=true;
+			private var movex:Number;
+			private var movey:Number;
+			private var fsdxserver:String;
 			private function init():void
 			{
 				servletcontext = this.configData.configXML.servletcontext;
 				this.map.addLayer(graphicsLayer);
 				getSBData();
 				getWZData();
-				
+				if(configXML)
+				{
+				movex=configXML.movex;
+				movey=configXML.movey;
+				fsdxserver=configXML.fsdxSERVICE;
+				}
 //				timerHis=new Timer(2000);
 //				timer=new Timer(40000);
 //				timer.addEventListener(TimerEvent.TIMER, onTimer);
@@ -81,7 +89,7 @@
 				httpservice.addEventListener(ResultEvent.RESULT,resultHandler);
 				httpservice.method = "POST";
 				var param:Object = new Object;
-				param.s = "select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1 and isoutside=2) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
+				param.s = "select 'xc' lx, t1.id,t2.mobile, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcywb t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
 				httpservice.send(param);
 			}
 			protected function getfySBData():void
@@ -93,7 +101,7 @@
 				httpservice.method = "POST";
 				var param:Object = new Object;
 				param.s = "SELECT *FROM (SELECT a.*, ROWNUM rn "+
-          " FROM (select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1 and isoutside=2) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc) a"+
+          " FROM (select 'xc' lx, t1.id, t2.mobile,t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcywb t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc) a"+
          " WHERE ROWNUM <= "+pagesize*20+") WHERE rn >= "+((pagesize-1)*20+1);
 				httpservice.send(param);
 			}
@@ -106,7 +114,7 @@
 				var p:Object = new Object;
 				p.s = "SELECT *"+
 					"  FROM (SELECT a.*, ROWNUM rn"+
-					"  FROM (select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1 and isoutside=2) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc) a"+
+					"  FROM (select 'xc' lx, t1.id, t2.mobile,t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcwzbg t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc) a"+
 					"  WHERE ROWNUM <= "+pagesize*20+") WHERE rn >= "+((pagesize-1)*20+1);
 				http.send(p);
 			}
@@ -117,7 +125,7 @@
 				http.addEventListener(ResultEvent.RESULT,wzResultHandler);
 				http.method = "POST";
 				var p:Object = new Object;
-				p.s = "select 'wz' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd,t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1 and isoutside=2) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
+				p.s = "select 'wz' lx, t1.id,t2.mobile, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd,t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcwzbg t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
 				http.send(p);
 			}
 			
@@ -181,6 +189,15 @@
 			
 			protected function wTemplate_closedHandler(event:Event):void
 			{
+				
+				if(infoPupop!=null)
+				{   
+					if(!iscolse)
+					{
+						this.map.removeChild(infoPupop);
+						iscolse=true;
+					}
+				}
 				graphicsLayer.clear(); 
 			}
 			
@@ -226,10 +243,10 @@
 				}
 				if(sel.x!=0)
 				{
-				var symbol:PictureMarkerSymbol=new PictureMarkerSymbol(ICON_URL + "i_pin.png",40,40,0,0);
+				var symbol:PictureMarkerSymbol=new PictureMarkerSymbol(ICON_URL + "i_pin.png",40,40,20,20);
 				var pt:MapPoint = new MapPoint();
-				pt.x=sel.x;
-				pt.y=sel.y;
+				pt.x=parseFloat(sel.x)+movex;
+				pt.y=parseFloat(sel.y)+movey;
 				var g:Graphic=new Graphic(pt,symbol,sel);
 				graphicsLayer.add(g);
 				g.addEventListener(MouseEvent.CLICK, click);
@@ -238,12 +255,22 @@
 			}
 			private function click(event:MouseEvent):void
 			{
+				if(infoPupop!=null)
+			{   
+				if(!iscolse)
+				{
+					this.map.removeChild(infoPupop);
+					iscolse=true;
+				}
+			}
+				
 				infoPupop= new bginfoPopup;
 				infoPupop.map = this.map;
 				//				infoPupop.name="PDA" + pdaResult.title;
 				this.map.addChild(infoPupop);
 				infoPupop.popcol.addEventListener(MouseEvent.CLICK, closeclick);
 				infoPupop.infoData = sel;
+				infoPupop.fsdxserver=fsdxserver;
 				infoPupop.servletcontext=this.servletcontext;
 				iscolse=false;
 			
@@ -262,6 +289,7 @@
 				var form:RCSBFormWindow =PopUpManager.createPopUp(this.parentApplication.parent,RCSBFormWindow,false) as RCSBFormWindow;
 				form.servletContent = this.servletcontext;
 				form.progressid = grid.selectedItem;
+				form.fsdxserver=fsdxserver;
 				form.addEventListener("NEWCLOSE", closeHandler);
 				PopUpManager.centerPopUp(form);
 			}

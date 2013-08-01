@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" headerHeight="25" title="即时上报"
 				xmlns:s="library://ns.adobe.com/flex/spark" 
-				xmlns:mx="library://ns.adobe.com/flex/mx" layout="absolute" backgroundColor="0xDEEBFF" width="566" height="450" showCloseButton="true" close="PopUpManager.removePopUp(this)" borderVisible="true" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+				xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:viewer="com.esri.viewer.*"  xmlns:components="com.esri.viewer.components.*" layout="absolute" backgroundColor="0xDEEBFF" width="566" height="450" showCloseButton="true" close="PopUpManager.removePopUp(this)" borderVisible="true" horizontalScrollPolicy="off" verticalScrollPolicy="off">
 	<fx:Script>
 		<![CDATA[
+			import com.esri.viewer.ViewerContainer;
+			
 			import flash.utils.flash_proxy;
 			
 			import mx.controls.Alert;
@@ -12,13 +14,13 @@
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
 			import mx.rpc.http.HTTPService;
-
+			public var fsdxserver:String=null;
 			public var servletContent:String = "";
 			[Bindable]
 			private var _progressid:Object = null;
 			[Bindable]
 			public var isreadonly:Boolean = false;
-			
+		
 			public function set progressid(value:Object):void
 			{
 				_progressid = value;
@@ -66,8 +68,9 @@
 			}
 			
 			private function sendHander(event:ResultEvent):void
-			{
-				Alert.show("保存并发送成功");
+			{var ress:String=event.result.toString();
+				Alert.show(ress);
+				
 			}
 			
 			private function showpic():void
@@ -84,17 +87,31 @@
 				else
 				{
 					submit('2'); 
-					var httpSendMSG:HTTPService = new HTTPService;
-					httpSendMSG.url= "http://10.23.97.247/androidpn/notification.do?action=send";
-					httpSendMSG.method = "POST";
-					httpSendMSG.addEventListener(ResultEvent.RESULT, sendHander);
-					var paramOjb:Object = new Object;
-					paramOjb.broadcast = "N";
-					paramOjb.username = _progressid.loginname;
-					paramOjb.title = "消息提醒";
-					paramOjb.message = "管理员已反馈编号" + _progressid.bh + "的业务，反馈意见为:" + fkyj.text;
-					paramOjb.uri = BH.text;
-					httpSendMSG.send(paramOjb);
+//					var httpSendMSG:HTTPService = new HTTPService;
+//					httpSendMSG.url= "http://10.23.97.247/androidpn/notification.do?action=send";
+//					httpSendMSG.method = "POST";
+//					httpSendMSG.addEventListener(ResultEvent.RESULT, sendHander);
+//					var paramOjb:Object = new Object;
+//					paramOjb.broadcast = "N";
+//					paramOjb.username = _progressid.loginname;
+//					paramOjb.title = "消息提醒";
+//					paramOjb.message = "管理员已反馈编号" + _progressid.bh + "的业务，反馈意见为:" + fkyj.text;
+//					paramOjb.uri = BH.text;
+//					httpSendMSG.send(paramOjb);
+					
+					var httpservice:HTTPService = new HTTPService;
+					//				httpservice.url= servletcontext + "/phone/GetuserServelt";
+					httpservice.url=fsdxserver;
+					httpservice.method = "POST";
+					httpservice.resultFormat = "text";
+					var params:URLVariables = new URLVariables();     
+					httpservice.addEventListener(ResultEvent.RESULT,sendHander);
+					params.sendnumber=_progressid.mobile;
+					params.logname=_progressid.loginname;
+//							params.sendnumber="18613057660";
+					params.senduserid= ViewerContainer.getInstance().userObject.userID;
+					params.sendmessage="管理员已反馈编号" + _progressid.bh + "的业务，反馈意见为:" + fkyj.text+"[珠堤处]";
+					httpservice.send(params);
 				}
 			}
 
