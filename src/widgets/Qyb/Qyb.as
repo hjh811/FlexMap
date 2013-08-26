@@ -16,5 +16,6 @@ package widgets.Qyb
 		public var extent:String;
 		public var time:String;
 		public var point:MapPoint;		
+		public var type:String;
 	}
 }

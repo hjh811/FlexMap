@@ -3,4 +3,13 @@
   <Station name="黄埔" x="444482.84308693744" y="2554865.5848788335"></Station>
   <Station name="中大" x="427634.5003808944" y="2556566.9016450164"></Station>
   <Station name="鸦岗" x="416376.49414065684" y="2569587.4771597916"></Station>
+  
+  <SYQ name="水位" table="">
+      <field aliasName="水位值" name="U_ST_STWTST_LV"></field>
+      <field aliasName="来报时间" name="U_ST_STWTST_LV"></field>
+  </SYQ>
+  <SYQ name="雨情" table="">
+      <field aliasName="雨量值" name="U_ST_STWTST_LV"></field>
+      <field aliasName="来报时间" name="U_ST_STWTST_LV"></field>
+  </SYQ>
 </configuration>

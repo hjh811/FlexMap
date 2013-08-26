@@ -70,6 +70,8 @@
 			private var graphicsLayer:GraphicsLayer;
 			private const ICON_URL:String = "assets/images/";
 			private var qybtb:Qybtb;
+			private var currentType:String = "水位";
+			private var dictionary:Dictionary = new Dictionary;
 			public function init():void
 			{
 				graphicsLayer=new GraphicsLayer;
@@ -87,6 +89,12 @@
 						qyb.point = new MapPoint(StationList[i].@x,StationList[i].@y);
 						swzAL.addItem(qyb);
 
+					}
+					
+					var configList:XMLList = configXML.SYQ;
+					for (var j:Number=0; j < configList.length(); j++)
+					{
+						dictionary[configList[j].@name] = configList[j];
 					}
 				}
 
@@ -123,8 +131,10 @@
 					PopUpManager.removePopUp(qybtb);
 			      }
 				qybtb=PopUpManager.createPopUp(this.parentApplication.parent,Qybtb,true) as Qybtb;
+				
 				PopUpManager.centerPopUp(qybtb);
 				qybtb.title = qyb.name;
+				qybtb.type = currentType;
 			}
 
 			protected function YQ_click(num:int):void
@@ -133,7 +143,31 @@
 					var httpservice:HTTPService = new HTTPService;
 					
 					//正式调用
-//					httpservice.url = "http://localhost:8080/WaterRain/servlet/GetDownXmlServlet?o=current";
+					httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=current";
+					var str:String="<?xml version='1.0' encoding='UTF-8'?>";
+					str+="<applyForm><tableName>QU1974</tableName>";
+					str+="<size>1</size>";
+					str+="<pageno>1</pageno>";
+					str+="<condition>";
+					str+="<column name='CZMC' oper='like'>"+qyb.name+"</column>";
+					str+="</condition>";
+					str+="<order>";
+					str+="<column name='INMSGTM'>desc</column>";
+					str+="</order>";
+					str+="</applyForm>";
+//					httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=current";
+//					var str:String="<?xml version='1.0' encoding='UTF-8'?>";
+//					str+="<applyForm><tableName>QU1974</tableName>";
+//					str+="<size>1</size>";
+//					str+="<pageno>1</pageno>";
+//					str+="<condition>";
+//					str+="<column name='CZMC' oper='like'>"+qyb.name+"</column>";
+//					str+="</condition>";
+//					str+="<order>";
+//					str+="<column name='INMSGTM'>desc</column>";
+//					str+="</order>";
+//					str+="</applyForm>";
+//					httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=current";
 //					var str:String="<?xml version='1.0' encoding='UTF-8'?>";
 //					str+="<applyForm><tableName>QU1927</tableName>";
 //					str+="<size>1</size>";
@@ -147,8 +181,8 @@
 //					str+="</applyForm>";
 					
 					///////////////测试调用////////////////////////
-					httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=testYQ";
-					var str:String = qyb.name;
+//					httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=testYQ";
+//					var str:String = qyb.name;
 					/////////////////////////////////////////////
 					
 					httpservice.method = "POST";
@@ -165,9 +199,14 @@
 				{
 					var qyb:Qyb = swzAL.getItemAt(count) as Qyb;
 					var xml:XML = XML(event.result);
+					if(xml!=null)
+					{
 					qyb.icon=ICON_URL+"i_flag_WSK.png";
-					qyb.gcsj="雨量:" + xml..U_ST_STRNST_PRF;
-					qyb.time =xml..U_ST_STRNST_TM;
+					qyb.gcsj="雨量:" + xml..INMSGPRF;
+					qyb.time =xml..INMSGTM;
+//					qyb.gcsj="雨量:" + xml..U_ST_STRNST_PRF;
+//					qyb.time =xml..U_ST_STRNST_TM;
+					qyb.type = "雨情";
 					this.QybAL.addItem(qyb);
 					
 					var infoPupop:QYInfoPopup = new QYInfoPopup;
@@ -180,7 +219,7 @@
 					graphic.geometry = qyb.point;
 					graphic.symbol = new PictureMarkerSymbol(ICON_URL+"i_flag_WSK.png");
 					this.graphicsLayer.add(graphic);
-					
+					}
 					count++;
 					if(count<swzAL.length)
 					{
@@ -202,6 +241,7 @@
 					qyb.icon=ICON_URL+"i_flag_WSK.png";
 					qyb.gcsj="水位:" + swz;
 					qyb.time =xml..U_ST_STWTST_TM;
+					qyb.type = this.currentType;
 					this.QybAL.addItem(qyb);
 					
 					var infoPupop:QYInfoPopup = new QYInfoPopup;
@@ -228,7 +268,19 @@
 					var qyb:Qyb = swzAL.getItemAt(num) as Qyb;
 					var httpservice:HTTPService = new HTTPService;
 					//正式调用
-//					httpservice.url = "http://localhost:8080/WaterRain/servlet/GetDownXmlServlet";					
+					httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=current";					
+					var str:String="<?xml version='1.0' encoding='UTF-8'?>";
+					str+="<applyForm><tableName>QU1926</tableName>";
+					str+="<size>1</size>";
+					str+="<pageno>1</pageno>";
+					str+="<condition>";
+					str+="<column name='SF_SWB_ZM' oper='like'>"+qyb.name+"</column>";
+					str+="</condition>";
+					str+="<order>";
+					str+="<column name='U_ST_STWTST_TM'>desc</column>";
+					str+="</order>";
+					str+="</applyForm>"; 
+//					httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=current";					
 //					var str:String="<?xml version='1.0' encoding='UTF-8'?>";
 //					str+="<applyForm><tableName>QU1926</tableName>";
 //					str+="<size>1</size>";
@@ -239,11 +291,11 @@
 //					str+="<order>";
 //					str+="<column name='U_ST_STWTST_TM'>desc</column>";
 //					str+="</order>";
-//					str+="</applyForm>";
+//					str+="</applyForm>"; 
 
 					///////////测试调用//////////////////////////
-					httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=testSW";
-					var str:String = qyb.name;
+//					httpservice.url = "http://10.23.108.104/WaterRain/servlet/GetDownXmlServlet?o=testSW";
+//					var str:String = qyb.name;
 					///////////////////////////////////////////
 					
 					httpservice.method = "POST";
@@ -278,6 +330,7 @@
 			
 			private function startQuerySW():void
 			{
+				currentType= "水位";
 				clear();
 				count = 0;
 				SQ_click(count);
@@ -285,6 +338,7 @@
 			
 			private function startQueryYQ():void
 			{
+				currentType= "雨情";
 				clear();
 				count = 0;
 				YQ_click(count);

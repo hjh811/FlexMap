@@ -226,6 +226,7 @@
 				qybtb=PopUpManager.createPopUp(this.parentApplication.parent,Qybtb,true) as Qybtb;
 				PopUpManager.centerPopUp(qybtb);
 				qybtb.title = infoData.name;
+				qybtb.type= infoData.type;
 			}
 
             private function flipIcon(dir:String):void
