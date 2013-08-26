@@ -4,7 +4,7 @@
 				   xmlns:mx="library://ns.adobe.com/flex/mx"
 				   xmlns:viewer="com.esri.viewer.*"
 				   layout="absolute"
-				   creationComplete="init()"  xmlns:components="com.esri.viewer.components.*" xmlns:PDA="widgets.PDA.*">
+				   widgetConfigLoaded="init()" xmlns:components="com.esri.viewer.components.*" xmlns:PDA="widgets.PDA.*">
 	
 	<fx:Style>
 		@namespace s "library://ns.adobe.com/flex/spark";
@@ -27,7 +27,14 @@
 	</fx:Style>
 	<fx:Script>
 		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.QueryEvent;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
 			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
 			
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
@@ -35,7 +42,7 @@
 			import mx.managers.PopUpManager;
 			import mx.rpc.events.ResultEvent;
 			import mx.rpc.http.HTTPService;
-			
+			private const ICON_URL:String = "assets/images/";
 			private var servletcontext:String;
 			[Bindable]
 			private var xcNum:Number = 0;
@@ -48,14 +55,27 @@
 			private var xcArray:Array = null;
 			[Bindable]
 			private var wzArray:Array = null;
+			
+			[Bindable]
+			private var count:int=1;
+			[Bindable]
+			private var pagesize:int=1;
+			private var isxc:Boolean=true;
+			private var movex:Number;
+			private var movey:Number;
+			private var fsdxserver:String;
 			private function init():void
 			{
 				servletcontext = this.configData.configXML.servletcontext;
-				
 				this.map.addLayer(graphicsLayer);
-				
 				getSBData();
 				getWZData();
+				if(configXML)
+				{
+				movex=configXML.movex;
+				movey=configXML.movey;
+				fsdxserver=configXML.fsdxSERVICE;
+				}
 //				timerHis=new Timer(2000);
 //				timer=new Timer(40000);
 //				timer.addEventListener(TimerEvent.TIMER, onTimer);
@@ -69,10 +89,35 @@
 				httpservice.addEventListener(ResultEvent.RESULT,resultHandler);
 				httpservice.method = "POST";
 				var param:Object = new Object;
-				param.s = "select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
+				param.s = "select 'xc' lx, t1.id,t2.mobile, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcywb t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
 				httpservice.send(param);
 			}
-			
+			protected function getfySBData():void
+			{
+				// TODO Auto-generated method stub
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url = servletcontext + "/gis/StatisticServlet";
+				httpservice.addEventListener(ResultEvent.RESULT,fyresultHandler);
+				httpservice.method = "POST";
+				var param:Object = new Object;
+				param.s = "SELECT *FROM (SELECT a.*, ROWNUM rn "+
+          " FROM (select 'xc' lx, t1.id, t2.mobile,t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcywb t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc) a"+
+         " WHERE ROWNUM <= "+pagesize*20+") WHERE rn >= "+((pagesize-1)*20+1);
+				httpservice.send(param);
+			}
+			private function getfyWZData():void
+			{
+				var http:HTTPService = new HTTPService;
+				http.url = servletcontext + "/gis/StatisticServlet";
+				http.addEventListener(ResultEvent.RESULT,fywzResultHandler);
+				http.method = "POST";
+				var p:Object = new Object;
+				p.s = "SELECT *"+
+					"  FROM (SELECT a.*, ROWNUM rn"+
+					"  FROM (select 'xc' lx, t1.id, t2.mobile,t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcwzbg t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc) a"+
+					"  WHERE ROWNUM <= "+pagesize*20+") WHERE rn >= "+((pagesize-1)*20+1);
+				http.send(p);
+			}
 			private function getWZData():void
 			{
 				var http:HTTPService = new HTTPService;
@@ -80,7 +125,7 @@
 				http.addEventListener(ResultEvent.RESULT,wzResultHandler);
 				http.method = "POST";
 				var p:Object = new Object;
-				p.s = "select 'wz' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
+				p.s = "select 'wz' lx, t1.id,t2.mobile, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd,t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcwzbg t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
 				http.send(p);
 			}
 			
@@ -91,9 +136,33 @@
 				if(jsonObject==null) return;
 				var jsonValues:Array = jsonObject["values"] as Array;
 				xcNum = jsonValues.length;
+				if(isxc)
+				{
+					count=xcNum/20+1;
+					pagecount.text="/"+count;
+					pagesize=1;
+					getfySBData();
+				}
+//				xcArray = jsonValues;
+			}
+			private function fyresultHandler(event:ResultEvent):void
+			{
+				if(event.result==null) return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+//				xcNum = jsonValues.length;
 				xcArray = jsonValues;
 			}
-			
+			private function fywzResultHandler(event:ResultEvent):void
+			{
+				if(event.result==null) return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+//				wzNum = jsonValues.length;
+			wzArray = jsonValues;
+			}
 			private function wzResultHandler(event:ResultEvent):void
 			{
 				if(event.result==null) return;
@@ -101,7 +170,14 @@
 				if(jsonObject==null) return;
 				var jsonValues:Array = jsonObject["values"] as Array;
 				wzNum = jsonValues.length;
-				wzArray = jsonValues;
+				if(!isxc)
+				{
+					count=wzNum/20+1;
+					pagecount.text="/"+count;
+					pagesize=1;
+					getfyWZData();
+				}
+//				wzArray = jsonValues;
 			}
 			
 			protected function linkbutton1_clickHandler(event:MouseEvent):void
@@ -113,7 +189,16 @@
 			
 			protected function wTemplate_closedHandler(event:Event):void
 			{
-
+				
+				if(infoPupop!=null)
+				{   
+					if(!iscolse)
+					{
+						this.map.removeChild(infoPupop);
+						iscolse=true;
+					}
+				}
+				graphicsLayer.clear(); 
 			}
 			
 			protected function tabnavigator1_changeHandler(event:IndexChangedEvent):void
@@ -121,15 +206,81 @@
 				// TODO Auto-generated method stub
 				if(event.newIndex == 1)
 				{
-					getWZData();
+//					getWZData();
+					isxc=false;
+					count=wzNum/20+1;
+					pagecount.text="/"+count;
+					pagesize=1;
+					getfyWZData();
 				}
 				else
 				{
-					getSBData();
+					count=xcNum/20+1;
+					pagecount.text="/"+count;
+					pagesize=1;
+					getfySBData();
+					isxc=true;
 				}
 				
 			}
+			var sel:Object;
+			private var infoPupop:bginfoPopup=null;
+			private var iscolse:Boolean=true;
+			protected function resoultData_ClickHandler(event:MouseEvent):void
+			{
+				var grid:DataGrid = event.currentTarget as DataGrid;
+				// TODO Auto-generated method stub
+				if(grid.selectedItem == null) return;
+				sel=grid.selectedItem;
+				graphicsLayer.clear();
+				if(infoPupop!=null)
+				{   
+					if(!iscolse)
+					{
+						this.map.removeChild(infoPupop);
+						iscolse=true;
+					}
+				}
+				if(sel.x!=0)
+				{
+				var symbol:PictureMarkerSymbol=new PictureMarkerSymbol(ICON_URL + "i_pin.png",40,40,20,20);
+				var pt:MapPoint = new MapPoint();
+				pt.x=parseFloat(sel.x)+movex;
+				pt.y=parseFloat(sel.y)+movey;
+				var g:Graphic=new Graphic(pt,symbol,sel);
+				graphicsLayer.add(g);
+				g.addEventListener(MouseEvent.CLICK, click);
+				this.map.centerAt(pt);
+				}
+			}
+			private function click(event:MouseEvent):void
+			{
+				if(infoPupop!=null)
+			{   
+				if(!iscolse)
+				{
+					this.map.removeChild(infoPupop);
+					iscolse=true;
+				}
+			}
+				
+				infoPupop= new bginfoPopup;
+				infoPupop.map = this.map;
+				//				infoPupop.name="PDA" + pdaResult.title;
+				this.map.addChild(infoPupop);
+				infoPupop.popcol.addEventListener(MouseEvent.CLICK, closeclick);
+				infoPupop.infoData = sel;
+				infoPupop.fsdxserver=fsdxserver;
+				infoPupop.servletcontext=this.servletcontext;
+				iscolse=false;
 			
+			}
+			private function closeclick(event:MouseEvent):void
+			{
+				
+				this.map.removeChild(infoPupop);
+				iscolse=true;
+			}
 			protected function resoultData_doubleClickHandler(event:MouseEvent):void
 			{
 				var grid:DataGrid = event.currentTarget as DataGrid;
@@ -138,6 +289,7 @@
 				var form:RCSBFormWindow =PopUpManager.createPopUp(this.parentApplication.parent,RCSBFormWindow,false) as RCSBFormWindow;
 				form.servletContent = this.servletcontext;
 				form.progressid = grid.selectedItem;
+				form.fsdxserver=fsdxserver;
 				form.addEventListener("NEWCLOSE", closeHandler);
 				PopUpManager.centerPopUp(form);
 			}
@@ -149,7 +301,77 @@
 //				Alert.show("发送成功");
 				
 			}
+			private function firstpage():void
+			{
+				if(isxc)
+				{
+					pagesize=1;
+					getfySBData();
+				}
+				else
+				{
+					pagesize=1;
+					getfyWZData();
+				}
+			}
+			private function propage():void
+			{
+				if(isxc)
+				{
+					pagesize=pagesize-1;
+					getfySBData();
+				}
+				else
+				{
+					pagesize=pagesize-1;
+					getfyWZData();
+				}
+			}
+			private function gopage():void
+			{
+				if(parseInt(inputpage.text)>count)
+				{
+					return;
+				}
 
+				if(isxc)
+				{
+					pagesize=parseInt(inputpage.text);
+					getfySBData();
+				}
+				else
+				{
+					pagesize=parseInt(inputpage.text);
+					getfyWZData();
+				}
+			}
+			private function nextpage():void
+			{
+				if(isxc)
+				{
+					pagesize=pagesize+1;
+					getfySBData();
+				}
+				else
+				{
+					pagesize=pagesize+1;
+					getfyWZData();
+				}
+			}
+			private function lastpage():void
+			{
+				if(isxc)
+				{
+					pagesize=count;
+					getfySBData();
+				}
+				else
+				{
+					pagesize=count;
+					getfyWZData();
+				}
+				
+			}
 			protected function tabnavigator1_creationCompleteHandler(event:FlexEvent):void
 			{
 //				getSBData();
@@ -165,7 +387,7 @@
 				  repeatBehavior="reverse" />
 	</fx:Declarations>
 	<viewer:WidgetTemplate id="wTemplate"
-						   width="400" height="300" closed="wTemplate_closedHandler(event)">
+						   width="400" height="350" closed="wTemplate_closedHandler(event)">
 		<s:Group id="XCSB"
 				 width="100%" height="100%"
 				 visible="true"
@@ -177,7 +399,7 @@
 				</s:HGroup>
 				<mx:TabNavigator width="100%" height="100%" change="tabnavigator1_changeHandler(event)" creationComplete="tabnavigator1_creationCompleteHandler(event)" >
 					<s:NavigatorContent width="100%" height="100%" label="巡查上报">
-						<mx:DataGrid id="rcDataGrid" dataProvider="{this.xcArray}" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)">
+						<mx:DataGrid id="rcDataGrid" dataProvider="{this.xcArray}" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" click="resoultData_ClickHandler(event)" doubleClick="resoultData_doubleClickHandler(event)">
 							<mx:columns>
 								<mx:DataGridColumn headerText="编号" dataField="bh" width="60"/>
 								<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
@@ -187,7 +409,7 @@
 						</mx:DataGrid>
 					</s:NavigatorContent>	
 					<s:NavigatorContent  width="100%" height="100%" label="违章上报">
-						<mx:DataGrid id="wzDataGrid"  dataProvider="{this.wzArray}" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)">
+						<mx:DataGrid id="wzDataGrid"  dataProvider="{this.wzArray}" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true"  click="resoultData_ClickHandler(event)" doubleClick="resoultData_doubleClickHandler(event)">
 							<mx:columns>
 								<mx:DataGridColumn headerText="编号" dataField="bh" width="60"/>
 								<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
@@ -197,6 +419,17 @@
 						</mx:DataGrid>
 					</s:NavigatorContent>	
 				</mx:TabNavigator>
+				<s:HGroup verticalAlign="middle" horizontalAlign="right" width="100%" height="30">
+					<s:Button label="首页" width="50" height="20" click="firstpage()" enabled="{count>1?true:false}"/>
+						<s:Button label="上一页" width="60" height="20" click="propage()" enabled="{pagesize>1?true:false}"/>	
+							<s:TextInput id="inputpage" restrict="0-9" width="20" height="20" text="{pagesize}"/>
+								<s:Label id="pagecount" text="/20" width="20" height="10" top="15"/>
+					               <s:Button label="跳页" width="50" height="20" click="gopage()" enabled="{count>1?true:false}"/>
+							<s:Button label="下一页" width="60" height="20" click="nextpage()" enabled="{count>pagesize?true:false}"/>	
+								<s:Button label="末页" width="50" height="20" click="lastpage()" enabled="{count>1?true:false}"/>	
+					
+				</s:HGroup>
+					
 			</s:VGroup>
 		</s:Group>
 	</viewer:WidgetTemplate>

@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:supportClasses="com.esri.ags.skins.supportClasses.*" 
+		 xmlns:flash="flash.filters.*" 
+		 creationComplete="init()"
+		 >
+	<s:layout>
+		<supportClasses:AttachmentLayout/>
+	</s:layout>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace flash "flash.filters.*";
+		.InfoCanvas
+		{
+			borderStyle: solid;
+			borderColor: #FFFFFF;
+			borderAlpha: 1;
+			borderThickness: 1;
+			cornerRadius: 4;
+			backgroundAlpha: 0.7;
+			backgroundColor: #B8B8B8;
+			dropShadowEnabled: true;
+			shadowDirection: right;
+			shadowDistance: 5;
+			horizontalScrollPolicy: off;
+			verticalScrollPolicy:off;
+		}
+		
+		.InfoTitle
+		{
+			font-weight:bold;
+			font-size:12;
+			color: #000000;
+		}
+		
+		.InfoText
+		{
+			font-size:12;
+			color: #000000;
+			font-family: Arial;
+		}
+	</fx:Style>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Map;
+			import com.esri.ags.events.ExtentEvent;
+			import com.esri.ags.events.PanEvent;
+			import com.esri.ags.geometry.MapPoint;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			
+			import spark.components.Application;
+			public var servletcontext:String;
+			public var fsdxserver:String;
+			private function init():void
+			{
+				map.addEventListener(PanEvent.PAN_UPDATE, repositionInfo);
+				map.addEventListener(ExtentEvent.EXTENT_CHANGE, repositionInfo);
+			}
+			
+			private var _map:Map;
+			
+			public function set map(value:Map):void
+			{
+				_map = value;
+			}
+			
+			public function get map():Map
+			{
+				return _map;
+			}
+			
+			private var _infoData:Object;
+			
+			public function set infoData(value:Object):void
+			{
+				_infoData = value;
+				if (value)
+				{
+					setInfoParameters();
+				}
+				else
+				{
+					currentState = "";
+				}
+			}
+			
+			public function get infoData():Object
+			{
+				return _infoData;
+			}
+			
+			private function setInfoParameters():void
+			{
+				positionInfo();
+				
+				//				infoIcon.source = infoData.icon;
+				infoTitle.text = infoData.bh;
+				infobh.text=infoData.xdy;
+				infoContent.text=infoData.sbsy;
+//				infoImage.source = "";
+//				infoImage.height = 0;
+//				infoImage.visible = false;
+//				infoImage.includeInLayout = false;
+//				infoLink.visible = false;
+//				infoLink.includeInLayout = false;
+			
+			}
+			
+			public function positionInfo():void
+			{
+				if ((map.extent) && (infoData))
+				{
+					
+					var pt:MapPoint = new MapPoint();
+					pt.x=infoData.x;
+					pt.y=infoData.y;
+					var infoPt:Point = map.toScreen(pt);
+					this.x = infoPt.x-35  ;
+					this.y = infoPt.y-45  ;
+					
+					//					repositionInfo(null);
+				}
+				
+			}
+			
+			public function repositionInfo(event:Event):void
+			{
+				if ((map.extent) && (infoData))
+				{
+					var pt:MapPoint = new MapPoint();
+					pt.x=infoData.x;
+					pt.y=infoData.y;
+					var infoPt:Point = map.toScreen(pt);
+					//					var reg:String = "regLeft";
+					//					if (infoPt.x > map.width / 2)
+					//					{
+					//						reg = "regRight";
+					//					}
+					//					currentState = reg;
+					this.x = infoPt.x-35 ;
+					this.y = infoPt.y-45 ;
+				}
+			}
+			
+			private function closeInfo():void
+			{
+				infoData = null;
+				this.map.removeChild(this);
+			}
+			private function showInfo():void
+			{
+				var form:RCSBFormWindow =PopUpManager.createPopUp(this.parentApplication.parent,RCSBFormWindow,false) as RCSBFormWindow;
+				form.servletContent = this.servletcontext;
+				form.fsdxserver=fsdxserver;
+				form.progressid = infoData;
+				form.addEventListener("NEWCLOSE", closeHandler);
+				PopUpManager.centerPopUp(form);
+			}
+			private function closeHandler(event:Event):void
+			{
+			
+				//				Alert.show("发送成功");
+				
+			}
+			private function getint(str:String):Number
+			{
+				try
+				{
+					var ii:Number=parseFloat(str);
+					if(isNaN(ii))
+					{
+						ii=0;
+					}
+					return ii;
+				}
+				catch(e:Error)
+				{
+					return 0;
+				}
+				return 0;
+			}
+			private function showLink():void
+			{
+				navigateToURL(new URLRequest(infoData.link));
+			}
+			
+			private function flipIcon(dir:String):void
+			{
+				var invertMatrix:Matrix = new Matrix(1, 0, 0);
+				// set matrix to invert horizontally
+				
+				if (dir == "RIGHT")
+				{
+					invertMatrix.scale(-1, 1);
+					// move matrix, so right is at left, and vice versa
+					invertMatrix.translate(40, 0);
+				}
+				
+				//				var iconTrans:Transform = new Transform(infoIcon);
+				//				iconTrans.matrix = invertMatrix;
+			}
+			
+			protected function infoLink_preinitializeHandler(event:FlexEvent):void
+			{
+//				if (isRtl())
+//				{
+//					infoLink.source = "assets/images/w_link.png";
+//				}
+//				else
+//				{
+//					infoLink.source = "assets/images/w_link_rtl.png";
+//				}
+			}
+			
+			public function isRtl():Boolean
+			{
+				var result:Boolean = false;
+				try
+				{
+					result = (FlexGlobals.topLevelApplication as Application).layoutDirection == "rtl";
+				}
+				catch (error:Error)
+				{
+					result = false;
+				}
+				return result;
+			}
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="regLeft"/>
+		<s:State name="regRight" basedOn="regLeft"/>
+	</s:states>
+	
+	<s:transitions>
+		<s:Transition id="maximize"
+					  fromState=""
+					  toState="*">
+			<s:Resize duration="600" target="{infoContainer}"/>
+		</s:Transition>
+		<s:Transition id="minimize"
+					  fromState="*"
+					  toState="">
+			<s:Parallel>
+				<s:Resize duration="300" target="{infoContainer}"/>
+			</s:Parallel>
+		</s:Transition>
+		<s:Transition id="regSwitch"
+					  fromState="*"
+					  toState="+">
+			<s:Parallel>
+				<s:Move duration="300" target="{infoCanvas}"/>
+			</s:Parallel>
+		</s:Transition>
+	</s:transitions>
+	
+	<s:Group id="infoContainer"
+			 x="0" y="0" width="0" height="0">
+		<mx:HRule id="infoRule"
+				  x="40" x.regRight="200" y="40" width="30" height="1"
+				  alpha="1"
+				  shadowColor="#ffffff"
+				  strokeColor="#FFFFFF"
+				  visible="false"
+				  visible.regLeft="true">
+			<mx:filters>
+				<flash:GlowFilter alpha="0.3"
+								  blurX="5"
+								  blurY="5"
+								  color="#000000"/>
+			</mx:filters>
+		</mx:HRule>
+		<mx:Canvas id="infoCanvas" backgroundAlpha="0.5"
+				   x="70" x.regRight="50" y="10" width="150"
+				   minHeight="60" styleName="InfoCanvas">
+			<mx:VBox width="100%" height="100%"
+					 horizontalAlign="left"
+					 paddingBottom="4"
+					 paddingLeft="4"
+					 paddingRight="4"
+					 paddingTop="4"
+					 verticalAlign="middle"
+					 verticalGap="0">
+				<mx:Text id="infoTitle"
+						 width="100%"
+						 text="Title"
+						 visible="false"
+						 styleName="InfoTitle"
+						 visible.regLeft="true"/>
+				<mx:Text id="infobh"
+						 width="100%"
+						 text="Content"
+						 visible="false"
+						 visible.regLeft="true" styleName="infobh"/>
+				<mx:Text id="infoContent"
+						 width="100%"
+						 text="Content"
+						 visible="false"
+						 visible.regLeft="true" styleName="InfoText"/>
+			
+			
+			</mx:VBox>
+			<mx:HBox width="100%"
+					 horizontalAlign="right"
+					 paddingRight="2" horizontalGap="2"
+					 paddingTop="2">
+				<mx:Image alpha="0.7"
+						  buttonMode="true"
+						  click="showInfo()"
+						  source="assets/images/w_link.png"
+						  useHandCursor="true"
+						  visible="true"/>
+				<mx:Image alpha="0.7" id="popcol"
+						  buttonMode="true"
+						  source="assets/images/widget/w_close.png"
+						  useHandCursor="true"
+						  visible="true"/>
+			</mx:HBox>
+		</mx:Canvas>
+		
+		
+	</s:Group>
+</s:Group>
