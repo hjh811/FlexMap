@@ -68,8 +68,11 @@
 			{
 				servletcontext = this.configData.configXML.servletcontext;
 				this.map.addLayer(graphicsLayer);
-				getSBData();
-				getWZData();
+//				getSBData();
+//				getWZData();
+				
+				getFyCount();
+				
 				if(configXML)
 				{
 				movex=configXML.movex;
@@ -81,17 +84,56 @@
 //				timer.addEventListener(TimerEvent.TIMER, onTimer);
 //				timerHis.addEventListener(TimerEvent.TIMER, onTimerHis);
 			}
-			protected function getSBData():void
+			
+			private function getFyCount():void
 			{
-				// TODO Auto-generated method stub
 				var httpservice:HTTPService = new HTTPService;
 				httpservice.url = servletcontext + "/gis/StatisticServlet";
-				httpservice.addEventListener(ResultEvent.RESULT,resultHandler);
+				httpservice.addEventListener(ResultEvent.RESULT,FyCountResultHandler);
 				httpservice.method = "POST";
 				var param:Object = new Object;
-				param.s = "select 'xc' lx, t1.id,t2.mobile, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcywb t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
+				param.s =  "select count(1) n from tab_gps_rcxcywb "
+					+" union all "
+					+" select count(1) from tab_gps_rcxcwzbg ";
 				httpservice.send(param);
 			}
+			
+			private function FyCountResultHandler(event:ResultEvent):void  //分页总数
+			{
+				if(event.result==null) return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				xcNum = Number(jsonValues[0].n);
+				wzNum = Number(jsonValues[1].n);
+				if(isxc)
+				{
+					count=xcNum/20+1;
+					pagecount.text="/"+count;
+					pagesize=1;
+					getfySBData();
+				}
+				else
+				{
+					count=wzNum/20+1;
+					pagecount.text="/"+count;
+					pagesize=1;
+					getfyWZData();
+				}
+			}
+			
+			
+//			protected function getSBData():void
+//			{
+//				// TODO Auto-generated method stub
+//				var httpservice:HTTPService = new HTTPService;
+//				httpservice.url = servletcontext + "/gis/StatisticServlet";
+//				httpservice.addEventListener(ResultEvent.RESULT,resultHandler);
+//				httpservice.method = "POST";
+//				var param:Object = new Object;
+//				param.s = "select 'xc' lx, t1.id,t2.mobile, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd, t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcywb t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
+//				httpservice.send(param);
+//			}
 			protected function getfySBData():void
 			{
 				// TODO Auto-generated method stub
@@ -118,16 +160,16 @@
 					"  WHERE ROWNUM <= "+pagesize*20+") WHERE rn >= "+((pagesize-1)*20+1);
 				http.send(p);
 			}
-			private function getWZData():void
-			{
-				var http:HTTPService = new HTTPService;
-				http.url = servletcontext + "/gis/StatisticServlet";
-				http.addEventListener(ResultEvent.RESULT,wzResultHandler);
-				http.method = "POST";
-				var p:Object = new Object;
-				p.s = "select 'wz' lx, t1.id,t2.mobile, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd,t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcwzbg t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
-				http.send(p);
-			}
+//			private function getWZData():void
+//			{
+//				var http:HTTPService = new HTTPService;
+//				http.url = servletcontext + "/gis/StatisticServlet";
+//				http.addEventListener(ResultEvent.RESULT,wzResultHandler);
+//				http.method = "POST";
+//				var p:Object = new Object;
+//				p.s = "select 'wz' lx, t1.id,t2.mobile, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj, t1.qy, t1.hd,t1.sfcl,t2.loginname,t1.x,t1.y  from tab_gps_rcxcwzbg t1, (select id, mobile,loginname from sys_userinfo where ispdauser = 1 ) t2 where t1.sfcl = 'false' and t1.userid = t2.id order by sbsy desc";
+//				http.send(p);
+//			}
 			
 			private function resultHandler(event:ResultEvent):void
 			{
@@ -183,8 +225,9 @@
 			protected function linkbutton1_clickHandler(event:MouseEvent):void
 			{
 				// TODO Auto-generated method stub
-				getSBData();
-				getWZData();
+//				getSBData();
+//				getWZData();
+				getFyCount();
 			}
 			
 			protected function wTemplate_closedHandler(event:Event):void
@@ -223,7 +266,7 @@
 				}
 				
 			}
-			var sel:Object;
+			private var sel:Object;
 			private var infoPupop:bginfoPopup=null;
 			private var iscolse:Boolean=true;
 			protected function resoultData_ClickHandler(event:MouseEvent):void
@@ -290,14 +333,16 @@
 				form.servletContent = this.servletcontext;
 				form.progressid = grid.selectedItem;
 				form.fsdxserver=fsdxserver;
-				form.addEventListener("NEWCLOSE", closeHandler);
+				form.isreadonly =true;
+//				form.addEventListener("NEWCLOSE", closeHandler);
 				PopUpManager.centerPopUp(form);
 			}
 			
 			private function closeHandler(event:Event):void
 			{
-				getSBData();
-				getWZData();
+//				getSBData();
+//				getWZData();
+//				getFyCount();
 //				Alert.show("发送成功");
 				
 			}
@@ -387,14 +432,14 @@
 				  repeatBehavior="reverse" />
 	</fx:Declarations>
 	<viewer:WidgetTemplate id="wTemplate"
-						   width="400" height="350" closed="wTemplate_closedHandler(event)">
+						   width="420" height="350" closed="wTemplate_closedHandler(event)">
 		<s:Group id="XCSB"
 				 width="100%" height="100%"
 				 visible="true"
 				 >
 			<s:VGroup width="100%" height="100%">
 				<s:HGroup verticalAlign="middle">
-					<s:Label paddingLeft="5" text="{'您有待处理业务:巡查共'+xcNum + '条,违章共' + wzNum + '条'}" fontWeight="bold" />
+					<s:Label paddingLeft="5" text="{' 巡查共'+xcNum + '条,违章共' + wzNum + '条'}" fontWeight="bold" />
 					<mx:LinkButton icon="@Embed('assets/images/update.png')" label="刷新" click="linkbutton1_clickHandler(event)"/>
 				</s:HGroup>
 				<mx:TabNavigator width="100%" height="100%" change="tabnavigator1_changeHandler(event)" creationComplete="tabnavigator1_creationCompleteHandler(event)" >
