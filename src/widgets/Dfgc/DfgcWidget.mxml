@@ -16,10 +16,11 @@
 	</fx:Declarations>
 	
 	<viewer:states>
-		
+		<s:State name="main"/>
 		<s:State name="gcbg"/>
 		<s:State name="gcd"/>
-		<s:State name="main"/>
+		<s:State name="gcyj"/>
+	
 	</viewer:states>
 	
 	<fx:Style>
@@ -57,6 +58,7 @@
 			import mx.controls.Alert;
 			import mx.effects.Move;
 			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
 			import mx.managers.PopUpManager;
 			import mx.rpc.AsyncResponder;
 			import mx.rpc.Fault;
@@ -127,7 +129,7 @@
 					
 					if (display == "true")
 					{
-						var modulemark:Object={icon: icon, title: title, display: display}
+						var modulemark:Object={id:moduleid, icon: icon, title: title, display: display}
 						moduleAC.addItem(modulemark);
 					}
 				}
@@ -135,10 +137,12 @@
 				gcbgLabel=configXML.labels.gcbglabel || "观测报告";
 				gcdLabel=configXML.labels.gcdlabel || "观测点";
 				layerid=configXML.QueryLayer.layerid || "";
-//				wTemplate.addTitlebarButton(ICON_URL + "i_home.png", "主菜单", showMain);
+				wTemplate.addTitlebarButton(ICON_URL + "i_home.png", "主菜单", showMain);
 //				wTemplate.addTitlebarButton(ICON_URL + "statistics.png", gcbgLabel, gcbglod,false);
 //				wTemplate.addTitlebarButton(ICON_URL + "i_pin2.png", gcdLabel, gcdlod,false);
 				addgcbg();
+				
+				getGcyjData();
 			}
 			catch( e:Error)
 			{
@@ -155,6 +159,10 @@
 					this.currentState = "gcbg";
 					wTemplate.selectedTitlebarButtonIndex = 2;
 					addgcbg();
+				}
+				else if(modulemark.id == "2")
+				{
+					this.currentState = "gcyj";
 				}
 //				else if (modulemark.title == "观测堤段")
 //				{
@@ -571,6 +579,33 @@
 				httpservice.addEventListener(ResultEvent.RESULT,showgcdhandler);
 				httpservice.send(params);
 			}
+
+			/////////////////////////////////////////////
+			///位移量预警
+			protected function getGcyjData():void
+			{
+				// TODO Auto-generated method stub
+				var httpservice:HTTPService = new HTTPService;
+				httpservice.url = servletcontext + "/gis/dataexchange?t=T002";
+				httpservice.method = "POST";
+				httpservice.resultFormat = "text";
+				httpservice.addEventListener(ResultEvent.RESULT, wyResultHandler);
+				httpservice.send(null);
+			}
+			
+			private function wyResultHandler(event:ResultEvent):void
+			{
+//				var httpservice:HTTPService = event.currentTarget as HTTPService;
+//				httpservice.removeEventListener(ResultEvent.RESULT,wyResultHandler);
+				if(event.result==null || event.result.toString()=="") return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				if(jsonObject==null) return;
+				var jsonValues:Array = jsonObject["values"] as Array;
+				if(jsonValues==null) return;
+				
+				gcDataGrid.dataProvider = jsonValues;
+			}
+
 		]]>
 	</fx:Script>
 	           
@@ -645,7 +680,6 @@
 				<s:Label text="重点堤段:" left="20"/> 
 				
 			</s:HGroup>	
-				
 					<mx:DataGrid id="rcDataGrid" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true"  doubleClick="resoultData_doubleClickHandler(event)" x.main="0" y.main="10" dataProvider="{newdiduanlist}">
 						<mx:columns>
 							
@@ -670,5 +704,26 @@
 		</s:VGroup>
 	</s:Group>
 		
+		<!--堤防观测预警-->
+		<s:VGroup width="100%" height="100%" visible="false" visible.gcyj="true">
+			<s:HGroup>
+				<s:Button label="水平位移"/>
+				<s:Button label="垂直位移"/>
+			</s:HGroup>
+			<mx:DataGrid width="100%" height="100%" id="gcDataGrid">
+				<mx:columns>
+					<mx:DataGridColumn headerText="堤段" dataField="gcmc"/>
+					<mx:DataGridColumn headerText="观测点" dataField="dh"/>
+					<mx:DataGridColumn headerText="观测值" dataField="ljwyl">
+						<mx:itemRenderer>
+							<fx:Component>
+								<mx:Label color="{data.ljwyl == '1.0'? 0xff0000:0x00ff00}"/>
+							</fx:Component>
+						</mx:itemRenderer>
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="观测时间"/>
+				</mx:columns>
+			</mx:DataGrid>
+		</s:VGroup>
 	</viewer:WidgetTemplate>
 </viewer:BaseWidget>

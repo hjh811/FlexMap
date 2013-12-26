@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<configuration>
+    <!-- 
+    	code:图层唯一编码，代码中使用
+    	layerName:图层名字，与地图服务发布的图层名字要一样
+    	titleField：显示的标题字段
+     -->
+    <layer code="layer001" layerName="排水口" titleField="TBZH" queryField="TBZH"/>
+    <layer code="layer002" layerName="警示设施" titleField="TBZH" queryField="TBZH"/>
+    <layer code="layer003" layerName="爬梯" titleField="TBZH" queryField="TBZH"/>
+    <layer code="layer004" layerName="横断面" titleField="TBZH" queryField="TBZH"/>
+    <layer code="layer005" layerName="堤岸工程划分" titleField="Layer" queryField="TXGLH"/>
+    <layer code="layer006" layerName="堤防实景照片" titleField="NAME" queryField="NAME"/>
+    <layer code="layer007" layerName="责任标示牌" titleField="统编桩号" queryField="统编桩号"/>
+    <layer code="layer008" layerName="地质钻孔" titleField="统编桩号" queryField="统编桩号"/>
+    <layer code="layer009" layerName="救生圈" titleField="TBZH" queryField="TBZH"/>
+    <layer code="layer010" layerName="亲水设施" titleField="TBZH" queryField="TBZH"/>
+</configuration>
