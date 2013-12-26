@@ -14,29 +14,30 @@
 ///////////////////////////////////////////////////////////////////////////
 -->
 <viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
-                   xmlns:s="library://ns.adobe.com/flex/spark"
-                   xmlns:mx="library://ns.adobe.com/flex/mx"
-                   xmlns:viewer="com.esri.viewer.*"
-                   layout="absolute"
-                   widgetConfigLoaded="init()"  xmlns:components="com.esri.viewer.components.*" xmlns:PDA="widgets.PDA.*">
- 
-    <viewer:states>
-        <s:State name="main"/>
-        <s:State name="SSJK"/>
-        <s:State name="FSXX"/>
-        <s:State name="GZJL"/>
-        <s:State name="GJHF"/>
-        <s:State name="XCSB"/>
-        <s:State name="XCTJ"/>
-        <s:State name="RYGL"/> 
-    </viewer:states>
-
-    <viewer:transitions>
-        <s:Transition autoReverse="true" toState="*">
-            <s:Fade targets="{[main,SSJK,FSXX,GZJL,GJHF,XCSB,XCTJ,RYGL]}"/>
-        </s:Transition>
-    </viewer:transitions>
-    
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   layout="absolute"
+				   widgetConfigLoaded="init()"  xmlns:components="com.esri.viewer.components.*" xmlns:PDA="widgets.PDA.*">
+	
+	<viewer:states>
+		<s:State name="main"/>
+		<s:State name="SSJK"/>
+		<s:State name="FSXX"/>
+		<s:State name="GZJL"/>
+		<s:State name="GJHF"/>
+		<s:State name="XCSB"/>
+		<s:State name="XCTJ"/>
+		<s:State name="RYGL"/> 
+		<s:State name="DDJK"/> 
+	</viewer:states>
+	
+	<viewer:transitions>
+		<s:Transition autoReverse="true" toState="*">
+			<s:Fade targets="{[main,SSJK,FSXX,GZJL,GJHF,XCSB,XCTJ,RYGL]}"/>
+		</s:Transition>
+	</viewer:transitions>
+	
 	<fx:Style>
 		@namespace s "library://ns.adobe.com/flex/spark";
 		@namespace mx "library://ns.adobe.com/flex/mx";
@@ -62,8 +63,8 @@
 			font-family: Arial;
 		}
 	</fx:Style>
-    <fx:Script>
-        <![CDATA[
+	<fx:Script>
+		<![CDATA[
 			import com.esri.ags.Graphic;
 			import com.esri.ags.events.MapMouseEvent;
 			import com.esri.ags.geometry.Geometry;
@@ -74,6 +75,8 @@
 			import com.esri.ags.symbols.SimpleLineSymbol;
 			import com.esri.viewer.ViewerContainer;
 			import com.esri.viewer.components.InfoPopup;
+			
+			import flashx.textLayout.formats.FormatValue;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
@@ -88,26 +91,28 @@
 			
 			import spark.components.supportClasses.ItemRenderer;
 			import spark.effects.Move3D;
-
-            private const ICON_URL:String = "assets/images/";
-
-            //labels
-            private var bookmarksLabel:String;
-            private var addbookmarksLabel:String;
-            [Bindable]
-            private var addLabel:String;
-            [Bindable]
-            private var submitLabel:String;
-            private var errorLabel:String;
+			
+			private const ICON_URL:String = "assets/images/";
+			
+			//labels
+			private var bookmarksLabel:String;
+			private var addbookmarksLabel:String;
+			[Bindable]
+			private var addLabel:String;
+			[Bindable]
+			private var submitLabel:String;
+			private var errorLabel:String;
 			[Bindable]
 			private var arrhfsd:ArrayCollection;
 			[Bindable]
 			private var moduleAC:ArrayCollection;
 			[Bindable]
 			private var lessnum:int=0;
-            private var selectedindex:int = 0;
+			private var selectedindex:int = 0;
 			[Bindable]
 			private var pdaResultAC:ArrayCollection;
+			[Bindable]
+			private var ddpdaResultAC:ArrayCollection;
 			private var graphicsLayer:GraphicsLayer = new GraphicsLayer();
 			private var pictureSymbol:PictureMarkerSymbol= new PictureMarkerSymbol("assets/images/user_male.png",32,32);
 			
@@ -120,11 +125,15 @@
 			private var showtip:Boolean = false;
 			private var dateFormatter:DateFormatter=new DateFormatter();
 			private var fsdxserver;
-            private function init():void
-            {
+			private function init():void
+			{
+				var ddddd:Date=new Date();
+				this.ddhourEnd.value=ddddd.hours;
+				this.ddminEnd.value=ddddd.minutes;
+				this.ddsceEnd.value=ddddd.seconds;
 				//Alert.show("ok");
-                if (configXML)
-                {
+				if (configXML)
+				{
 					var moduleList:XMLList=configXML..module;
 					moduleAC=new ArrayCollection();
 					for (var i:Number=0; i < moduleList.length(); i++)
@@ -133,22 +142,27 @@
 						var icon:String=moduleList[i].@icon;
 						var title:String=moduleList[i].@title;
 						var display:String=moduleList[i];
-						
+						//						Alert.show(moduleid);
 						if (display == "true")
 						{
-							var modulemark:Object={icon: icon, title: title, display: display}
+							var modulemark:Object={id:moduleid,icon: icon, title: title, display: display}
 							moduleAC.addItem(modulemark);
+							
 						}
+						wTemplate.addTitlebarButton(icon, title, function(moduleid){
+							//							  Alert.show(moduleid);
+							showMain(moduleid);
+						});
 					}
 					
 					servletcontext = this.configData.configXML.servletcontext;
 					fsdxserver=configXML.fsdxSERVICE;
-                }
+				}
 				arrhfsd=new ArrayCollection([{name:'1秒',vaule:1000},{name:'2秒',vaule:2000},{name:'0.5秒',vaule:500},
 					{name:'0.3秒',vaule:300},{name:'0.2秒',vaule:200},]);
-                addTitleBarButtons();
+				//                addTitleBarButtons();
 				
-				this.map.addLayer(graphicsLayer);
+				this.map.addLayer(graphicsLayer)
 				
 				graphicsLayerDraw=new GraphicsLayer();
 				map.addLayer(graphicsLayerDraw);
@@ -162,8 +176,8 @@
 				httpservices.addEventListener(ResultEvent.RESULT,getUsersHandler);
 				httpservices.send(null);
 				
-//				getSBData();
-//				getWZData();
+				//				getSBData();
+				//				getWZData();
 				timerHis=new Timer(500);
 				timer=new Timer(40000);
 				timer.addEventListener(TimerEvent.TIMER, onTimer);
@@ -172,13 +186,13 @@
 				this.map.addEventListener(MapMouseEvent.MAP_CLICK,doubleclick);
 				
 				
-//				HTMLPopup.show(aboutContent, aboutButtonLabel, 400, 300);
-//				this.showInfoWindow(null);
-            }
+				//				HTMLPopup.show(aboutContent, aboutButtonLabel, 400, 300);
+				//				this.showInfoWindow(null);
+			}
 			
 			private function doubleclick(event:MapMouseEvent):void
 			{
-//				Alert.show(event.mapPoint.x + "," + event.mapPoint.y);
+				//				Alert.show(event.mapPoint.x + "," + event.mapPoint.y);
 			}
 			
 			private function onTimer(event:TimerEvent):void
@@ -197,82 +211,172 @@
 			{
 				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
 				userSelected.dataProvider = jsonObject["values"] as Array;
-//				pdausers.dataProvider = jsonObject["values"] as Array;
-			}
-
-            private function assignLabels():void
-            {
-            }
-
-            private function addTitleBarButtons():void
-            {
-                wTemplate.addTitlebarButton(ICON_URL + "i_home.png", "主菜单", showMain);
-                
-                wTemplate.addTitlebarButton(ICON_URL + "i_searchgraphical.png", "实时监控", showSSJK);
-                wTemplate.addTitlebarButton(ICON_URL + "i_edit.png", "发送消息", showFSXX);
-				wTemplate.addTitlebarButton(ICON_URL + "i_zoomprevious.png", "轨迹回放", showGJHF);
-//				wTemplate.addTitlebarButton(ICON_URL + "i_table.png", "巡查上报", showXCSB);
-				wTemplate.addTitlebarButton(ICON_URL + "i_bookmark3.png", "历史记录", showGZJL);
-				wTemplate.addTitlebarButton(ICON_URL + "statistics.png", "巡查统计", showXCTJ);
-				wTemplate.addTitlebarButton(ICON_URL + "user_male.png", "人员管理", showRYGL);
-            }
-
-            private function showMain():void
-            {
-                this.currentState = "main";
-                wTemplate.selectedTitlebarButtonIndex = 0; // used to indicate selected titlebar button when automatically switching state
-            }
-
-            private function showSSJK():void
-            {
-                this.currentState = "SSJK";
-				wTemplate.selectedTitlebarButtonIndex = 1;
-            }
-            private function showFSXX():void
-            {
-                this.currentState = "FSXX";
-				wTemplate.selectedTitlebarButtonIndex = 2;
-				getuser();
-            }
-            private function showGZJL():void
-            {
-                this.currentState = "GZJL";
-				wTemplate.selectedTitlebarButtonIndex = 3;
-            }
-            private function showGJHF():void
-            {
-                this.currentState = "GJHF";
-				wTemplate.selectedTitlebarButtonIndex = 4;
-            }
-			
-			private function showXCTJ():void
-			{
-//				this.currentState = "XCTJ";
-//				wTemplate.selectedTitlebarButtonIndex = 6;
-				var xcstatisticWindow:XCStatisticWindow = PopUpManager.createPopUp(this.parentApplication.parent,XCStatisticWindow,true) as XCStatisticWindow;
-				xcstatisticWindow.servletContext = this.servletcontext;
-				PopUpManager.centerPopUp(xcstatisticWindow);
+				//				pdausers.dataProvider = jsonObject["values"] as Array;
 			}
 			
-			private function showXCSB():void
+			private function assignLabels():void
 			{
-				this.currentState = "XCSB";
-				wTemplate.selectedTitlebarButtonIndex = 5;
 			}
 			
-			
-			//人员管理
-			private function showRYGL():void
+			//            private function addTitleBarButtons():void
+			//            {
+			//                wTemplate.addTitlebarButton(ICON_URL + "i_home.png", "主菜单", showMain);
+			//                
+			//                wTemplate.addTitlebarButton(ICON_URL + "i_searchgraphical.png", "实时监控", showSSJK);
+			//                wTemplate.addTitlebarButton(ICON_URL + "i_edit.png", "发送消息", showFSXX);
+			//				wTemplate.addTitlebarButton(ICON_URL + "i_zoomprevious.png", "轨迹回放", showGJHF);
+			////				wTemplate.addTitlebarButton(ICON_URL + "i_table.png", "巡查上报", showXCSB);
+			//				wTemplate.addTitlebarButton(ICON_URL + "i_bookmark3.png", "历史记录", showGZJL);
+			//				wTemplate.addTitlebarButton(ICON_URL + "statistics.png", "巡查统计", showXCTJ);
+			//				wTemplate.addTitlebarButton(ICON_URL + "user_male.png", "人员管理", showRYGL);
+			//				wTemplate.addTitlebarButton(ICON_URL + "i_servicearea.png", "定点监控", showDDJK);
+			//            }
+			var isshow:Boolean=true;
+			private function showMain(inde:String):void
 			{
-				this.currentState = "RYGL";
-				wTemplate.selectedTitlebarButtonIndex = 7;
-				
-				if(userDataGrid.dataProvider==null)
+				var index:int=0;
+				if(inde==null)
 				{
-				////获取所有人员
-					getAllusers();
+					index=wTemplate.selectedTitlebarButtonIndex;
+					if(isshow)
+					{
+						isshow=false;
+						return;
+						
+					}
+					else
+					{
+						isshow=true;
+					}
+					
+					
 				}
+				else
+				{
+					index=parseInt(inde);
+				}
+				if(index==0)
+				{
+					this.currentState = "main";
+					//                wTemplate.selectedTitlebarButtonIndex = index; 
+					cleardd();
+				}
+				else if(index==1)
+				{
+					this.currentState = "DDJK";
+					//					wTemplate.selectedTitlebarButtonIndex = index;
+					cleardd();
+				}
+				else if(index==2)
+				{
+					this.currentState = "FSXX";
+					//					wTemplate.selectedTitlebarButtonIndex = 2;
+					getuser();
+					cleardd();
+				}
+				else if(index==3)
+				{
+					this.currentState = "GZJL";
+					//					wTemplate.selectedTitlebarButtonIndex = 3;
+					cleardd();
+				}
+				else if(index==4)
+				{
+					this.currentState = "GJHF";
+					//					wTemplate.selectedTitlebarButtonIndex = 4;
+					cleardd();
+				}
+				else if(index==5)
+				{
+					this.currentState = "XCSB";
+					//					wTemplate.selectedTitlebarButtonIndex = 5;
+					cleardd();
+				}
+				else if(index==6)
+				{
+					var xcstatisticWindow:XCStatisticWindow = PopUpManager.createPopUp(this.parentApplication.parent,XCStatisticWindow,true) as XCStatisticWindow;
+					xcstatisticWindow.servletContext = this.servletcontext;
+					PopUpManager.centerPopUp(xcstatisticWindow);
+					cleardd();
+				}
+				else if(index==7)
+				{
+					this.currentState = "RYGL";
+					//					wTemplate.selectedTitlebarButtonIndex = 7;
+					
+					if(userDataGrid.dataProvider==null)
+					{
+						////获取所有人员
+						getAllusers();
+					}
+					cleardd();
+				}
+				
+				
 			}
+			
+			//            private function showSSJK():void
+			//            {
+			//                this.currentState = "SSJK";
+			//				wTemplate.selectedTitlebarButtonIndex = 1;
+			//				cleardd();
+			//            }
+			//            private function showFSXX():void
+			//            {
+			//                this.currentState = "FSXX";
+			//				wTemplate.selectedTitlebarButtonIndex = 2;
+			//				getuser();
+			//				cleardd();
+			//            }
+			//            private function showGZJL():void
+			//            {
+			//                this.currentState = "GZJL";
+			//				wTemplate.selectedTitlebarButtonIndex = 3;
+			//				cleardd();
+			//            }
+			//            private function showGJHF():void
+			//            {
+			//                this.currentState = "GJHF";
+			//				wTemplate.selectedTitlebarButtonIndex = 4;
+			//				cleardd();
+			//            }
+			//			
+			//			private function showXCTJ():void
+			//			{
+			////				this.currentState = "XCTJ";
+			////				wTemplate.selectedTitlebarButtonIndex = 6;
+			//				var xcstatisticWindow:XCStatisticWindow = PopUpManager.createPopUp(this.parentApplication.parent,XCStatisticWindow,true) as XCStatisticWindow;
+			//				xcstatisticWindow.servletContext = this.servletcontext;
+			//				PopUpManager.centerPopUp(xcstatisticWindow);
+			//				cleardd();
+			//			}
+			//			
+			//			private function showXCSB():void
+			//			{
+			//				this.currentState = "XCSB";
+			//				wTemplate.selectedTitlebarButtonIndex = 5;
+			//				cleardd();
+			//			}
+			//			private function showDDJK():void
+			//			{
+			//				this.currentState = "DDJK";
+			//				wTemplate.selectedTitlebarButtonIndex = 8;
+			//				cleardd();
+			//			}
+			//			
+			//			//人员管理
+			//			private function showRYGL():void
+			//			{
+			//				this.currentState = "RYGL";
+			//				wTemplate.selectedTitlebarButtonIndex = 7;
+			//				
+			//				if(userDataGrid.dataProvider==null)
+			//				{
+			//				////获取所有人员
+			//					getAllusers();
+			//				}
+			//				cleardd();
+			//			}
 			
 			private function alluserResultHandler(event:ResultEvent):void
 			{
@@ -286,44 +390,175 @@
 			
 			private function clickMoudel(event:Event):void
 			{
+				
 				var modulemark:Object=event.currentTarget.infoData;
-				if (modulemark.title == "查询监控")
-				{
-					showSSJK();
-				}
-				else if (modulemark.title == "发送消息")
-				{
-					showFSXX();
-				}
-//				else if (modulemark.title == "工作记录")
-//				{
-//					showGZJL();
-//				}
-				else if (modulemark.title == "轨迹回放")
-				{
-					showGJHF();
-				}
-				else if (modulemark.title == "巡查统计")
-				{
-					showXCTJ();
-				}
-				else if (modulemark.title == "巡查上报")
-				{
-					showXCSB();
-				}
-				else if (modulemark.title == "历史记录")
-				{
-					showGZJL();
-				}
-				else if (modulemark.title == "人员管理")
-				{
-					showRYGL();
-				}
+				showMain(modulemark.id);
+				////				showMain(modulemark)
+				//				if (modulemark.id == "查询监控")
+				//				{
+				//					showSSJK();
+				//				}
+				//				else if (modulemark.title == "发送消息")
+				//				{
+				//					showFSXX();
+				//				}
+				////				else if (modulemark.title == "工作记录")
+				////				{
+				////					showGZJL();
+				////				}
+				//				else if (modulemark.title == "轨迹回放")
+				//				{
+				//					showGJHF();
+				//				}
+				//				else if (modulemark.title == "巡查统计")
+				//				{
+				//					showXCTJ();
+				//				}
+				//				else if (modulemark.title == "巡查上报")
+				//				{
+				//					showXCSB();
+				//				}
+				//				else if (modulemark.title == "历史记录")
+				//				{
+				//					showGZJL();
+				//				}
+				//				else if (modulemark.title == "人员管理")
+				//				{
+				//					showRYGL();
+				//				}
+				//				else if (modulemark.title == "定点监控")
+				//				{
+				//					showDDJK();
+				//				}
 				
 			}
-
-            private function QueryNow(event:Event):void
-            {
+			var ddtime:String="";
+			private function QueryDDDW(event:Event):void
+			{
+				
+				if (this.dddateField.text != "" )
+				{
+					ddtime=this.dddateField.text;
+					var startDate_H:Number=this.ddhourEnd.value;
+					var startDate_M:Number=this.ddminEnd.value;
+					var startDate_S:Number=this.ddsceEnd.value;
+					var startDate_HStr:String=startDate_H.toString();
+					var startDate_MStr:String=startDate_M.toString();
+					var startDate_SStr:String=startDate_S.toString();
+					if (startDate_H.toString().length == 1)
+						startDate_HStr="0" + startDate_H.toString();
+					if (startDate_M.toString().length == 1)
+						startDate_MStr="0" + startDate_M.toString();
+					if (startDate_S.toString().length == 1)
+						startDate_SStr="0" + startDate_S.toString();
+					ddtime=ddtime + " " + startDate_HStr + ":" + startDate_MStr + ":" + startDate_SStr;
+					var currdata:Date=new Date();
+					var formatStr:DateFormatter = new DateFormatter;
+					formatStr.formatString="YYYY-MM-DD HH:NN:SS";
+					var dd:String=formatStr.format(currdata);  
+					if(dd<ddtime)
+					{
+						ddtime=dd;
+					}
+				}
+				
+				var InfoArray:Array=new Array();
+				var i:int;
+				for (i=0; i < map.numChildren; i++)
+				{
+					if (map.getChildAt(i).name.substr(0, 3).toUpperCase() == "PDA")
+					{
+						InfoArray.push(map.getChildAt(i));
+					}
+				}
+				
+				for (i=0; i < InfoArray.length; i++)
+				{
+					map.removeChild(InfoArray[i]);
+				}
+				InfoArray=null;
+				showtip = this.isshowtip.selected;
+				var httpservices:HTTPService = new HTTPService;
+				httpservices.url= servletcontext + "/phone/PDAServlet?o=dddw";
+				httpservices.method = "POST";
+				var obj:Object=new Object();
+				obj.time=ddtime;
+				httpservices.addEventListener(ResultEvent.RESULT,ddcurrentHandler);
+				httpservices.send(obj);
+			}
+			private function ddcurrentHandler(event:ResultEvent):void
+			{
+				graphicsLayer.clear();
+				var InfoArray:Array=new Array();
+				var i:int;
+				for (i=0; i < map.numChildren; i++)
+				{
+					if (map.getChildAt(i).name.substr(0, 3).toUpperCase() == "PDA")
+					{
+						InfoArray.push(map.getChildAt(i));
+					}
+				}
+				for (i=0; i < InfoArray.length; i++)
+				{
+					map.removeChild(InfoArray[i]);
+				}
+				InfoArray=null;
+				
+				ddpdaResultAC =new ArrayCollection;
+				if(event.result.toString()==null || event.result.toString() == "") return;
+				var jsonObject:Object = JSON.parse(event.result.toString()) as Object;
+				
+				var jsonValues:Array = jsonObject["values"] as Array;
+				if(jsonValues==null) return; 
+				var colunms:Array = new Array;
+				for(var i:int = 0;i<jsonValues.length;i++)
+				{
+					var realname:String = jsonValues[i].realname as String;
+					var logintime:String = jsonValues[i].createtime as String;
+					var x:Number = Number(jsonValues[i].x) -116.647;   //线性纠正
+					var y:Number = Number(jsonValues[i].y)-11.425;
+					var symbol:PictureMarkerSymbol = pictureSymbol;
+					var pdaResult:PDAResult = new PDAResult();
+					if(isOverTime(logintime,ddtime))
+					{
+						symbol = this.false_pictureSymbol;
+						ddpdaResultAC.addItem(pdaResult); 
+					}
+					else
+					{
+						ddpdaResultAC.addItemAt(pdaResult,0);
+					}
+					
+					pdaResult.title = realname;
+					pdaResult.content = ""+ logintime;
+					pdaResult.icon = "assets/images/user_male.png";
+					var gra:Graphic = new Graphic;
+					var pt:MapPoint = new MapPoint(x,y,this.map.spatialReference);
+					gra.geometry=pt;
+					gra.symbol = symbol;
+					gra.attributes = pdaResult;
+					
+					pdaResult.point = pt;
+					pdaResult.symbol = symbol;
+					pdaResult.geometry = pt;
+					
+					
+					if(showtip && !isOverTime(logintime,ddtime))
+					{
+						var infoPupop:PDAInfoPopup = new PDAInfoPopup;
+						infoPupop.map = this.map;
+						infoPupop.name="PDA" + pdaResult.title;
+						this.map.addChild(infoPupop);
+						
+						infoPupop.infoData = pdaResult;
+						//infoPupop.addEventListener(MouseEvent.ROLL_OUT, MouseOutRemoveHandler);
+					}
+					gra.addEventListener(MouseEvent.CLICK,graClickHandler);
+					graphicsLayer.add(gra);
+				}
+			}
+			private function QueryNow(event:Event):void
+			{
 				if (timer.running == true)
 					timer.stop();
 				
@@ -343,7 +578,7 @@
 				}
 				InfoArray=null;
 				
-//				graClick=null;
+				//				graClick=null;
 				timerRunning=true;
 				timer.start();
 				
@@ -353,7 +588,7 @@
 				httpservices.method = "POST";
 				httpservices.addEventListener(ResultEvent.RESULT,currentHandler);
 				httpservices.send(null);
-            }
+			}
 			
 			private function currentHandler(event:ResultEvent):void
 			{
@@ -418,7 +653,7 @@
 						infoPupop.map = this.map;
 						infoPupop.name="PDA" + pdaResult.title;
 						this.map.addChild(infoPupop);
-
+						
 						infoPupop.infoData = pdaResult;
 						//infoPupop.addEventListener(MouseEvent.ROLL_OUT, MouseOutRemoveHandler);
 					}
@@ -453,10 +688,13 @@
 			private function isOverTime(time:String, nowTime:String):Boolean
 			{
 				var result:Boolean=true;
-				var today:Date=new Date();
-				dateFormatter.formatString="YYYY-MM-DD JJ:NN:SS";
-				
-				nowTime=dateFormatter.format(today);
+				if(nowTime=="")
+				{
+					var today:Date=new Date();
+					dateFormatter.formatString="YYYY-MM-DD JJ:NN:SS";
+					
+					nowTime=dateFormatter.format(today);
+				}
 				var date:String=nowTime.split(" ")[0];
 				var hour:Number=nowTime.split(" ")[1].toString().split(":")[0];
 				var minute:Number=nowTime.split(" ")[1].toString().split(":")[1];
@@ -488,10 +726,10 @@
 				{
 					if (pdaResult.geometry.type == Geometry.MAPPOINT)
 					{
-//						if (map.scale > zoomScale)
-//						{
-//							map.scale = zoomScale;
-//						}
+						//						if (map.scale > zoomScale)
+						//						{
+						//							map.scale = zoomScale;
+						//						}
 						map.centerAt(pdaResult.geometry as MapPoint);
 						map.scale = 10000;
 					}
@@ -505,26 +743,26 @@
 						}
 					}
 				}
-//				clearTimeout(hitimer);
-//				hitimer = setTimeout(showHighlight, 300, [ pdaResult ]);
+				//				clearTimeout(hitimer);
+				//				hitimer = setTimeout(showHighlight, 300, [ pdaResult ]);
 			}
 			
 			private function showHighlight(params:Array):void
 			{
-//				var showHighlightPoint:MapPoint = params[0].geometry as MapPoint;
-//				var linkAlias:String = params[0].linkAlias;
+				//				var showHighlightPoint:MapPoint = params[0].geometry as MapPoint;
+				//				var linkAlias:String = params[0].linkAlias;
 				
-//				popUpRenderer.popUpInfo = configurePopUpInfo(params[0].graphic.attributes.link, linkAlias);
-//				popUpRenderer.graphic = params[0].graphic;
+				//				popUpRenderer.popUpInfo = configurePopUpInfo(params[0].graphic.attributes.link, linkAlias);
+				//				popUpRenderer.graphic = params[0].graphic;
 				
-//				map.infoWindow.content = popUpRenderer;
-//				map.infoWindow.contentOwner = popUpRenderer.graphic;
-//				map.infoWindow.show(showHighlightPoint);
+				//				map.infoWindow.content = popUpRenderer;
+				//				map.infoWindow.contentOwner = popUpRenderer.graphic;
+				//				map.infoWindow.show(showHighlightPoint);
 			}
-			
-			private function Cancel(event:Event):void
+			private function cleardd()
 			{
 				pdaResultAC = null;
+				ddpdaResultAC=null
 				graphicsLayer.clear();
 				var InfoArray:Array=new Array();
 				var i:int;
@@ -541,7 +779,27 @@
 				}
 				InfoArray=null;
 			}
-
+			private function Cancel(event:Event):void
+			{
+				pdaResultAC = null;
+				ddpdaResultAC=null
+				graphicsLayer.clear();
+				var InfoArray:Array=new Array();
+				var i:int;
+				for (i=0; i < map.numChildren; i++)
+				{
+					if (map.getChildAt(i).name.substr(0, 3).toUpperCase() == "PDA")
+					{
+						InfoArray.push(map.getChildAt(i));
+					}
+				}
+				for (i=0; i < InfoArray.length; i++)
+				{
+					map.removeChild(InfoArray[i]);
+				}
+				InfoArray=null;
+			}
+			
 			
 			[Bindable]
 			private var startDate:String;
@@ -619,7 +877,7 @@
 					Alert.show("请选择时间段！");
 				}
 			}
-			 
+			
 			private var hisPath:Boolean=false;
 			private var carCount:int=0;
 			private var bCarCatch:Boolean=true;
@@ -649,7 +907,7 @@
 					
 					var dateDictionary:Dictionary = new Dictionary;
 					
-//					hisPathAC=new Array();
+					//					hisPathAC=new Array();
 					dataArray=null; //清空数组
 					dataArray=new Array();
 					var iCount:Number=0;
@@ -685,31 +943,31 @@
 						Longitude=jsonValues[m].x;
 						Latitude=jsonValues[m].y;
 						var hisPt:MapPoint=new MapPoint();
-//						hisPt.x=Number(Longitude);
-//						hisPt.y=Number(Latitude);
+						//						hisPt.x=Number(Longitude);
+						//						hisPt.y=Number(Latitude);
 						hisPt.x=Number(Longitude) -116.647;
 						hisPt.y=Number(Latitude) -11.425;
-//						hisPt.time = gpsTime;
-//						hisPathAC.push(hisPt);
-//						dataArray.push({time: gpsTime, x: Longitude, y: Latitude, satellitecount: satellitecount});
+						//						hisPt.time = gpsTime;
+						//						hisPathAC.push(hisPt);
+						//						dataArray.push({time: gpsTime, x: Longitude, y: Latitude, satellitecount: satellitecount});
 						
 						pointArray.push({pt:hisPt,time:gpsTime});
 						
-//						if (iCount == 0)
-//						{
-//							sTime=gpsTime;
-//						}
-//						iCount++;
+						//						if (iCount == 0)
+						//						{
+						//							sTime=gpsTime;
+						//						}
+						//						iCount++;
 					}
-//					eTime=gpsTime;
+					//					eTime=gpsTime;
 					
-//					obj=[{"用户名": this.userSelected.text, "记录数": iCount.toString(), nowRecord: 0}];
+					//					obj=[{"用户名": this.userSelected.text, "记录数": iCount.toString(), nowRecord: 0}];
 					obj = new Array;
 					for each(var key:String in dateArray)
 					{
 						obj.push({"日期": key, "记录数": dateDictionary[key].length, nowRecord: 0,pointArray:dateDictionary[key]});
 					}
-//					this.resoultData.dataProvider=obj;
+					//					this.resoultData.dataProvider=obj;
 					CursorManager.removeBusyCursor();
 				}
 				catch (error:Error)
@@ -773,7 +1031,7 @@
 					
 					ihisCount=ihisCount + 1;
 					m_currentSelectedHis.nowRecord=ihisCount; //显示回放的当前记录
-//					this.resoultData.dataProvider=obj;
+					//					this.resoultData.dataProvider=obj;
 					this.resoultData.invalidateList();
 				}
 				else
@@ -788,7 +1046,7 @@
 					this.alpha = 0.9;
 				}
 			}
-
+			
 			protected function wTemplate_closedHandler(event:Event):void
 			{
 				this.alpha = 0.9;
@@ -798,6 +1056,7 @@
 				timerHis.stop();
 				timer.stop();
 				pdaResultAC = null;
+				ddpdaResultAC=null
 				this.btnback.label="回放";
 				timerRunning=false;
 				var InfoArray:Array=new Array();
@@ -815,7 +1074,7 @@
 				}
 				InfoArray=null;
 			}
-
+			
 			private var graphicPointSym:PictureMarkerSymbol=new PictureMarkerSymbol("assets/images/i_demographics.png", 32, 32);
 			private var m_currentSelectedHis:Object = null;
 			private function onBackHandler(event:MouseEvent):void
@@ -849,7 +1108,7 @@
 					
 					graMove=null;
 					//clearMessage();
-//					this.showInfoWindow(null);
+					//					this.showInfoWindow(null);
 					timer.stop();
 					bCarCatch=false;
 					//this.wRepeater.dataProvider=null;
@@ -861,8 +1120,8 @@
 						timer.stop();
 						if(hfsd.selectedItem!=null)
 						{
-						timerHis=new Timer(hfsd.selectedItem.vaule);
-						timerHis.addEventListener(TimerEvent.TIMER, onTimerHis);
+							timerHis=new Timer(hfsd.selectedItem.vaule);
+							timerHis.addEventListener(TimerEvent.TIMER, onTimerHis);
 						}
 						graphicsLayerDraw.clear();
 						var icon:String="assets/images/i_demographics.png";
@@ -877,7 +1136,7 @@
 						
 						graphicsLayerPath.clear();
 						//clearMessage();
-					
+						
 						timerHis.start();
 						this.btnback.label="停止";
 						
@@ -893,23 +1152,23 @@
 			private function clickTrack(event:MouseEvent):void
 			{
 				trackBool=this.chkTrack.selected;
-//				if(this.pdaWindow!=null)
-//				{
-////					pdaWindow.canMapCenter = !trackBool;
-//				}
+				//				if(this.pdaWindow!=null)
+				//				{
+				////					pdaWindow.canMapCenter = !trackBool;
+				//				}
 			}
-
+			
 			protected function btnCz_clickHandler(event:MouseEvent):void
 			{
 				sendname="";
-			   sendnumber="";
-			   logname="";
-	
-		       sendMgs.text="";
-			   people.text="";
-			   dxsize=1;
-			   Message.text=messagelegth+"/"+dxsize;
-			   lessnum=0;
+				sendnumber="";
+				logname="";
+				
+				sendMgs.text="";
+				people.text="";
+				dxsize=1;
+				Message.text=messagelegth+"/"+dxsize;
+				lessnum=0;
 			}
 			var jsonwy:Array ;
 			var jsonzjb:Array ;
@@ -941,22 +1200,22 @@
 			private function reshandler(event:ResultEvent):void
 			{
 				try
-			{
-			  
-				var ress:String=event.result.toString();
-				var jsonObject:Object = JSON.parse(ress) as Object;
-				 jsonwy = jsonObject["wy"] as Array;
-				 jsonzjb= jsonObject["zjb"] as Array;
-				 username=jsonObject.username as String;
-				 messagelast=":"+username+"[珠堤处]";
-				 messagelegth=70-messagelast.length;
-				 Message.text=messagelegth+"/"+dxsize;
-			}
-			catch(e:Error)
-			{
-				Alert.show(e.message.toString());
-			}
-			
+				{
+					
+					var ress:String=event.result.toString();
+					var jsonObject:Object = JSON.parse(ress) as Object;
+					jsonwy = jsonObject["wy"] as Array;
+					jsonzjb= jsonObject["zjb"] as Array;
+					username=jsonObject.username as String;
+					messagelast=":"+username+"[珠堤处]";
+					messagelegth=70-messagelast.length;
+					Message.text=messagelegth+"/"+dxsize;
+				}
+				catch(e:Error)
+				{
+					Alert.show(e.message.toString());
+				}
+				
 				
 			}
 			var sendname:String;
@@ -970,24 +1229,24 @@
 			{
 				if(choosepeo.sur)
 				{
-				for(var j:int=0;j<choosepeo.choosearray.length;j++)
-				{
-					var sel:Object=choosepeo.choosearray[j];
-					if(j==0)
+					for(var j:int=0;j<choosepeo.choosearray.length;j++)
 					{
-						
-						sendname=sel.name;
-						sendnumber=sel.phone;
-						logname=sel.loginname;
+						var sel:Object=choosepeo.choosearray[j];
+						if(j==0)
+						{
+							
+							sendname=sel.name;
+							sendnumber=sel.phone;
+							logname=sel.loginname;
+						}
+						else
+						{
+							sendname+=","+sel.name;
+							sendnumber+=","+sel.phone;
+							logname+=","+sel.loginname;
+						}
 					}
-					else
-					{
-						sendname+=","+sel.name;
-						sendnumber+=","+sel.phone;
-						logname+=","+sel.loginname;
-					}
-				}
-				people.text=sendname;
+					people.text=sendname;
 				}
 			}
 			protected function btnSend_clickHandler(event:MouseEvent):void
@@ -1015,28 +1274,28 @@
 							messa=mess.substring(ii*messagelegth, mess.length);
 						}
 					}
-				var httpservice:HTTPService = new HTTPService;
-//				httpservice.url= servletcontext + "/phone/GetuserServelt";
-				httpservice.url=fsdxserver;
-				httpservice.method = "POST";
-				httpservice.resultFormat = "text";
-				var params:URLVariables = new URLVariables();     
-				httpservice.addEventListener(ResultEvent.RESULT,sendhandler);
-				params.sendnumber=sendnumber;
-				params.logname=logname;
-//				params.sendnumber="18613057660";
-				params.senduserid= ViewerContainer.getInstance().userObject.userID;
-				params.sendmessage=messa+messagelast;
-				httpservice.send(params);
+					var httpservice:HTTPService = new HTTPService;
+					//				httpservice.url= servletcontext + "/phone/GetuserServelt";
+					httpservice.url=fsdxserver;
+					httpservice.method = "POST";
+					httpservice.resultFormat = "text";
+					var params:URLVariables = new URLVariables();     
+					httpservice.addEventListener(ResultEvent.RESULT,sendhandler);
+					params.sendnumber=sendnumber;
+					params.logname=logname;
+					//				params.sendnumber="18613057660";
+					params.senduserid= ViewerContainer.getInstance().userObject.userID;
+					params.sendmessage=messa+messagelast;
+					httpservice.send(params);
 				}
 			}
 			private function sendhandler(event:ResultEvent):void
 			{     
 				if(isfs==1)
 				{
-				var ress:String=event.result.toString();
-				Alert.show(ress);
-				isfs=2;
+					var ress:String=event.result.toString();
+					Alert.show(ress);
+					isfs=2;
 				}
 			}
 			private function pro(j:Array):ArrayCollection
@@ -1044,21 +1303,21 @@
 				var wypeo:ArrayCollection=new ArrayCollection();
 				for(var i:int=0;i<j.length;i++)
 				{
-//					var obj:Object=new Object();
-//					obj.loginname=j[i].
+					//					var obj:Object=new Object();
+					//					obj.loginname=j[i].
 					wypeo.addItem(j[i]);
 				}
 				return wypeo;
 			}
-//			private function sendHander(event:ResultEvent):void
-//			{
-//				if(isfs==1)
-//				{
-//				Alert.show("发送成功");
-//				}
-//			}
-
-
+			//			private function sendHander(event:ResultEvent):void
+			//			{
+			//				if(isfs==1)
+			//				{
+			//				Alert.show("发送成功");
+			//				}
+			//			}
+			
+			
 			protected function tabnavigator1_changeHandler(event:IndexChangedEvent):void
 			{
 				// TODO Auto-generated method stub
@@ -1072,8 +1331,8 @@
 				}
 				
 			}
-
-
+			
+			
 			protected function getSBData():void
 			{
 				// TODO Auto-generated method stub
@@ -1105,7 +1364,7 @@
 				var jsonValues:Array = jsonObject["values"] as Array;
 				xcNum = jsonValues.length;
 				if(rcDataGrid!=null)
-				this.rcDataGrid.dataProvider = jsonValues;
+					this.rcDataGrid.dataProvider = jsonValues;
 			}
 			
 			private function wzResultHandler(event:ResultEvent):void
@@ -1116,9 +1375,9 @@
 				var jsonValues:Array = jsonObject["values"] as Array;
 				wzNum = jsonValues.length;
 				if(wzDataGrid!=null)
-				this.wzDataGrid.dataProvider = jsonValues;
+					this.wzDataGrid.dataProvider = jsonValues;
 			}
-
+			
 			//双击详细表单
 			protected function resoultData_doubleClickHandler(event:MouseEvent):void
 			{
@@ -1129,7 +1388,7 @@
 				form.servletContent = this.servletcontext;
 				form.progressid = grid.selectedItem;
 				form.isreadonly = true;
-//				form.addEventListener("NEWCLOSE", closeHandler);
+				//				form.addEventListener("NEWCLOSE", closeHandler);
 				PopUpManager.centerPopUp(form);
 			}
 			
@@ -1140,8 +1399,8 @@
 				Alert.show("发送成功");
 				
 			}
-
-
+			
+			
 			protected function linkbutton1_clickHandler(event:MouseEvent):void
 			{
 				// TODO Auto-generated method stub
@@ -1179,8 +1438,8 @@
 				p.s = "select id,loginname,realname,mobile,sex,phone,address,email,xcfwqd,xcfwzd from view_gps_alluser";
 				httpservice.send(p);
 			}
-
-
+			
+			
 			protected function userDataGrid_doubleClickHandler(event:MouseEvent):void
 			{
 				// TODO Auto-generated method stub
@@ -1221,15 +1480,15 @@
 			private function firstpage():void
 			{
 				
-					pagesize=1;
-					fyQueryls();
+				pagesize=1;
+				fyQueryls();
 				
 			}
 			private function propage():void
 			{
 				
-					pagesize=pagesize-1;
-					fyQueryls();
+				pagesize=pagesize-1;
+				fyQueryls();
 				
 			}
 			private function gopage():void
@@ -1240,28 +1499,28 @@
 				}
 				
 				
-					pagesize=parseInt(inputpage.text);
-					fyQueryls();
-			
+				pagesize=parseInt(inputpage.text);
+				fyQueryls();
+				
 			}
 			private function nextpage():void
 			{
 				
-					pagesize=pagesize+1;
-					fyQueryls();
+				pagesize=pagesize+1;
+				fyQueryls();
 				
 			}
 			private function lastpage():void
 			{
 				
-					pagesize=count;
-					fyQueryls();
+				pagesize=count;
+				fyQueryls();
 				
 			}
 			private function queryHistoryRecord():void
 			{
-				 sDate = queryStartDate.text;
-				 eDate = queryEndDate.text;
+				sDate = queryStartDate.text;
+				eDate = queryEndDate.text;
 				if(sDate=="" || eDate=="")
 				{
 					Alert.show("请填写时间");
@@ -1298,18 +1557,18 @@
 				if(typeComb.selectedItem.toString() == "巡查上报")
 				{
 					p.s = "SELECT *"+
-					"  FROM (SELECT a.*, ROWNUM rn"+
-					"  FROM ("+"select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1 and isoutside=2) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc"
-					+") a"+
-					"  WHERE ROWNUM <= "+pagesize*20+") WHERE rn >= "+((pagesize-1)*20+1);
+						"  FROM (SELECT a.*, ROWNUM rn"+
+						"  FROM ("+"select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcywb t1, (select id, loginname from sys_userinfo where ispdauser = 1 and isoutside=2) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc"
+						+") a"+
+						"  WHERE ROWNUM <= "+pagesize*20+") WHERE rn >= "+((pagesize-1)*20+1);
 				}
 				else
 				{
-				p.s = "SELECT *"+
-					"  FROM (SELECT a.*, ROWNUM rn"+
-					"  FROM ("+"select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1 and isoutside=2) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc"
-					+") a"+
-					"  WHERE ROWNUM <= "+pagesize*20+") WHERE rn >= "+((pagesize-1)*20+1);
+					p.s = "SELECT *"+
+						"  FROM (SELECT a.*, ROWNUM rn"+
+						"  FROM ("+"select 'xc' lx, t1.id, t1.bh, to_char(t1.sj,'yyyy-mm-dd') sj, t1.ycqkmc, t1.yzcd, t1.ycqkbw, t1.dlwz, t1.ssxmgc, t1.tzbhqdfw, t1.tzbhzdfw, t1.gcbhqdfw, t1.gcbhzdfw, t1.ycdddmjgxs, t1.ms, t1.yyfx, t1.jy, t1.xdy, t1.xdzz, t1.sbsy, t1.fkyj,t1.qy,t1.hd,t1.sfcl,t2.loginname from tab_gps_rcxcwzbg t1, (select id, loginname from sys_userinfo where ispdauser = 1 and isoutside=2) t2 where t1.userid = t2.id and (to_char(t1.sbsy,'yyyy-mm-dd') >= '" + sDate + "' and to_char(t1.sbsy,'yyyy-mm-dd') <= '"+ eDate + "') order by sbsy desc"
+						+") a"+
+						"  WHERE ROWNUM <= "+pagesize*20+") WHERE rn >= "+((pagesize-1)*20+1);
 				};
 				http.send(p);
 			}
@@ -1343,7 +1602,7 @@
 				pagecount.text="/"+count;
 				pagesize=1;
 			}
-
+			
 			protected function sendMgs_changeHandler(event:Event):void
 			{
 				
@@ -1354,7 +1613,7 @@
 				{
 					if(dxsize>1)
 					{
-				Message.text="0/"+(dxsize-1);
+						Message.text="0/"+(dxsize-1);
 					}
 					else
 					{Message.text=curr+"/"+dxsize;}
@@ -1366,22 +1625,22 @@
 				
 				
 			}
-
-        ]]>
-    </fx:Script>
-    <fx:Declarations>
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
 		<s:Move3D id="moveEffect"
 				  xFrom="-100" xTo="100" xBy="400" 
 				  zFrom="-100" zBy="200" zTo="0"
 				  repeatBehavior="reverse" />
 	</fx:Declarations>
-    <viewer:WidgetTemplate id="wTemplate"
-                           width="400" height="365" closed="wTemplate_closedHandler(event)">
-
-        <s:HGroup id="main"
-                 width="100%" height="100%"
-                 visible="false"
-                 visible.main="true" horizontalAlign="center">
+	<viewer:WidgetTemplate id="wTemplate"
+						   width="400" height="365" closed="wTemplate_closedHandler(event)">
+		
+		<s:HGroup id="main"
+				  width="100%" height="100%"
+				  visible="false"
+				  visible.main="true" horizontalAlign="center">
 			<mx:Tile width="100%" height="100%" horizontalGap="1">
 				<mx:Repeater id="fRepeater" dataProvider="{moduleAC}">
 					<components:WidgetButtonControl infoData="{fRepeater.currentItem}" click="clickMoudel(event)">
@@ -1389,11 +1648,11 @@
 					</components:WidgetButtonControl>
 				</mx:Repeater>
 			</mx:Tile>
-        </s:HGroup>
-        <s:VGroup id="SSJK"
-                 width="100%" height="100%"
-                 visible="false"
-                 visible.SSJK="true" gap="2">
+		</s:HGroup>
+		<s:VGroup id="SSJK"
+				  width="100%" height="100%"
+				  visible="false"
+				  visible.SSJK="true" gap="2">
 			<mx:HBox width="100%">
 				<mx:Button label="监控" fontSize="12" width="50" height="23" click="QueryNow(event)"/>
 				<mx:Button label="取消" fontSize="12" width="50" height="23" click="Cancel(event)"/>
@@ -1404,45 +1663,45 @@
 				</mx:HBox>
 				
 			</mx:HBox>
-
+			
 			<mx:HRule width="100%" height="2" alpha="0.8" styleName="WidgetRule"/>
 			<s:Scroller width="100%" height="100%">
-					<PDA:PDAResultDataGroup dataProvider="{pdaResultAC}" searchResultClick="clickResult(event)"
-												  >
-						<PDA:layout>
-							<s:VerticalLayout gap="2"
-											  horizontalAlign="justify"
-											  useVirtualLayout="true"/>
-						</PDA:layout>
-					</PDA:PDAResultDataGroup>
-			 </s:Scroller>
-        </s:VGroup>
-        <s:VGroup id="FSXX"
-                 width="100%" height="100%"
-                 visible="false"
-                 visible.FSXX="true" gap="2">
+				<PDA:PDAResultDataGroup dataProvider="{pdaResultAC}" searchResultClick="clickResult(event)"
+										>
+					<PDA:layout>
+						<s:VerticalLayout gap="2"
+										  horizontalAlign="justify"
+										  useVirtualLayout="true"/>
+					</PDA:layout>
+				</PDA:PDAResultDataGroup>
+			</s:Scroller>
+		</s:VGroup>
+		<s:VGroup id="FSXX"
+				  width="100%" height="100%"
+				  visible="false"
+				  visible.FSXX="true" gap="2">
 			<s:VGroup width="100%" height="80" top="10">
 				<mx:HBox  width="100%" height="30">
-				<s:Button id="btnChoose"   icon="assets/images/group_add.gif" label="选择接收人" height="25"  width="120" click="btnChoose_clickHandler(event)"/>
+					<s:Button id="btnChoose"   icon="assets/images/group_add.gif" label="选择接收人" height="25"  width="120" click="btnChoose_clickHandler(event)"/>
 					<mx:Button id="btnCz" label="重置" height="25"   width="50" click="btnCz_clickHandler(event)"/>
-					</mx:HBox>
-					<mx:TextArea id="people" width="100%" height="50" styleName="InfoText" editable="false" />
+				</mx:HBox>
+				<mx:TextArea id="people" width="100%" height="50" styleName="InfoText" editable="false" />
 			</s:VGroup>
 			<s:VGroup width="100%" height="100%" gap="5">
 				<mx:Label text="内容"/>
 				<mx:TextArea id="sendMgs" width="100%" height="70" styleName="InfoText" height.FSXX="142" change="sendMgs_changeHandler(event)"/>
 				<mx:HBox  width="100%" height="40">
-				<mx:Button id="btnSend" label="发送" width="100" click="btnSend_clickHandler(event)" width.FSXX="78" enabled="{lessnum>0?true:false}"/>
+					<mx:Button id="btnSend" label="发送" width="100" click="btnSend_clickHandler(event)" width.FSXX="78" enabled="{lessnum>0?true:false}"/>
 					<s:VGroup  width="100%" height="40" horizontalAlign="right">
-				<mx:Text id="Message" text="65/1" width="40%" fontSize="12" fontWeight="bold" visible="true" />
-				</s:VGroup>
+						<mx:Text id="Message" text="65/1" width="40%" fontSize="12" fontWeight="bold" visible="true" />
+					</s:VGroup>
 				</mx:HBox>
 			</s:VGroup>
-        </s:VGroup>
-        <s:Group id="GZJL"
-                 width="100%" height="100%"
-                 visible="false"
-                 visible.GZJL="true">
+		</s:VGroup>
+		<s:Group id="GZJL"
+				 width="100%" height="100%"
+				 visible="false"
+				 visible.GZJL="true">
 			<s:VGroup width="100%" height="100%">
 				<s:HGroup width="100%" verticalAlign="middle">
 					<mx:ComboBox id="typeComb" width="80">
@@ -1481,11 +1740,11 @@
 					
 				</s:HGroup>
 			</s:VGroup>
-        </s:Group>
-        <s:VGroup id="GJHF"
-                 width="100%" height="100%"
-                 visible="false"
-                 visible.GJHF="true" gap="2">
+		</s:Group>
+		<s:VGroup id="GJHF"
+				  width="100%" height="100%"
+				  visible="false"
+				  visible.GJHF="true" gap="2">
 			<mx:HBox width="100%" horizontalGap="0">
 				<mx:Label text="选择人员" styleName="InfoText"/>
 				<mx:ComboBox id="userSelected" width="105" labelField="realname"/>
@@ -1534,17 +1793,17 @@
 						<mx:DataGridColumn headerText="记录数" dataField="记录数"/>
 						<mx:DataGridColumn headerText="当前回放记录" dataField="nowRecord"/>
 						<!--<mx:DataGridColumn headerText="操作" width="50">
-							<mx:itemRenderer>
-								<fx:Component>
-									<mx:Button label="详细" click="this.outerDocument.showdetail()">
-									</mx:Button>
-								</fx:Component>
-							</mx:itemRenderer>
+						<mx:itemRenderer>
+						<fx:Component>
+						<mx:Button label="详细" click="this.outerDocument.showdetail()">
+						</mx:Button>
+						</fx:Component>
+						</mx:itemRenderer>
 						</mx:DataGridColumn>-->
 					</mx:columns>
 				</mx:DataGrid>
 			</mx:HBox>
-        </s:VGroup>
+		</s:VGroup>
 		<s:Group id="XCSB"
 				 width="100%" height="100%"
 				 visible="false"
@@ -1558,12 +1817,12 @@
 				<mx:TabNavigator width="100%" height="100%" change="tabnavigator1_changeHandler(event)" >
 					<s:NavigatorContent width="100%"  height="100%" label="巡查上报">
 						<mx:DataGrid id="rcDataGrid" styleName="dataGridStyle" width="100%" height="100%" alternatingItemColors="[#FFFFFF,#DFF0F8]" doubleClickEnabled="true" doubleClick="resoultData_doubleClickHandler(event)">
-								<mx:columns>
-									<mx:DataGridColumn headerText="编号" dataField="bh" width="60"/>
-									<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
-									<mx:DataGridColumn headerText="发送时间" dataField="sbsy"/>
-									<mx:DataGridColumn headerText="巡查员" dataField="xdy"/>
-								</mx:columns>
+							<mx:columns>
+								<mx:DataGridColumn headerText="编号" dataField="bh" width="60"/>
+								<mx:DataGridColumn headerText="异常情况名称" dataField="ycqkmc"/>
+								<mx:DataGridColumn headerText="发送时间" dataField="sbsy"/>
+								<mx:DataGridColumn headerText="巡查员" dataField="xdy"/>
+							</mx:columns>
 						</mx:DataGrid>
 					</s:NavigatorContent>	
 					<s:NavigatorContent  width="100%" height="100%" label="违章上报">
@@ -1597,5 +1856,39 @@
 				</mx:columns>
 			</mx:DataGrid>
 		</s:VGroup>
-    </viewer:WidgetTemplate>
+		<s:VGroup id="DDJK"
+				  width="100%" height="100%"
+				  visible="false"
+				  visible.DDJK="true" gap="2">
+			<mx:HBox width="100%" horizontalGap="0">
+				<mx:Label text="时间" styleName="InfoText"/>
+				<mx:DateField id="dddateField" yearNavigationEnabled="true" showToday="false" width="90" formatString="YYYY-MM-DD" selectedDate="{new Date()}"/>
+				<mx:NumericStepper id="ddhourEnd" width="45" maximum="23" minimum="0" value="12"/>
+				<mx:Label text="点" width="15" styleName="InfoText"/>
+				<mx:NumericStepper id="ddminEnd" width="45" maximum="59" minimum="0" value="0"/>
+				<mx:Label text="分" width="15" styleName="InfoText"/>
+				<mx:NumericStepper id="ddsceEnd" width="45" maximum="59" minimum="0" value="0"/>
+				<mx:Label text="秒" width="15" styleName="InfoText"/>
+			</mx:HBox>
+			<mx:HBox width="100%">
+				<mx:Button label="监控" fontSize="12" width="50" height="23" click="QueryDDDW(event)"/>
+				<mx:Button label="取消" fontSize="12" width="50" height="23" click="Cancel(event)"/>
+				<mx:HBox id="ddboxMessage" width="100%" horizontalAlign="center" >
+					<mx:SWFLoader id="ddswfMessage" source="assets/images/loader.swf" visible="false"/>
+					<mx:Text id="ddtxtMessage" text="" styleName="WidgetText" horizontalCenter="0" width="90%"/>
+				</mx:HBox>	
+			</mx:HBox>
+			<mx:HRule width="100%" height="2" alpha="0.8" styleName="WidgetRule"/>
+			<s:Scroller width="100%" height="100%">
+				<PDA:PDAResultDataGroup dataProvider="{ddpdaResultAC}" searchResultClick="clickResult(event)"
+										>
+					<PDA:layout>
+						<s:VerticalLayout gap="2"
+										  horizontalAlign="justify"
+										  useVirtualLayout="true"/>
+					</PDA:layout>
+				</PDA:PDAResultDataGroup>
+			</s:Scroller>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
 </viewer:BaseWidget>
